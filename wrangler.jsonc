@@ -1,0 +1,62 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "csc-questionnaire-local",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-08-25",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": { "directory": ".open-next/assets", "binding": "ASSETS" },
+  "observability": { "enabled": true },
+  "vars": {
+    "APP_ENV": "local",
+    "APP_ORIGIN": "http://localhost:3000"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "csc-questionnaire-local",
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "drizzle"
+    }
+  ],
+  "env": {
+    "staging": {
+      "name": "csc-questionnaire-staging",
+      "workers_dev": true,
+      "assets": { "directory": ".open-next/assets", "binding": "ASSETS" },
+      "observability": { "enabled": true },
+      "vars": {
+        "APP_ENV": "staging",
+        "APP_ORIGIN": "https://csc-questionnaire-staging.REPLACE_ME.workers.dev"
+      },
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "csc-questionnaire-staging",
+          "database_id": "REPLACE_WITH_STAGING_D1_ID",
+          "migrations_dir": "drizzle"
+        }
+      ]
+    },
+    "production": {
+      "name": "csc-questionnaire",
+      "workers_dev": false,
+      "assets": { "directory": ".open-next/assets", "binding": "ASSETS" },
+      "observability": { "enabled": true },
+      "vars": {
+        "APP_ENV": "production",
+        "APP_ORIGIN": "https://forms.REPLACE_WITH_CAREY_DOMAIN"
+      },
+      "routes": [
+        { "pattern": "forms.REPLACE_WITH_CAREY_DOMAIN", "custom_domain": true }
+      ],
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "csc-questionnaire-production",
+          "database_id": "REPLACE_WITH_PRODUCTION_D1_ID",
+          "migrations_dir": "drizzle"
+        }
+      ]
+    }
+  }
+}
