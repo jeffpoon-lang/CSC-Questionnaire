@@ -26,6 +26,8 @@ export interface FormRendererProps {
   prefill?: Answers;
   turnstileSiteKey?: string | null;
   isTestEnv: boolean;
+  /** Admin preview: renders + validates but never submits or saves drafts. */
+  previewOnly?: boolean;
 }
 
 interface SubmitResponse {
@@ -57,7 +59,7 @@ export function FormRenderer(props: FormRendererProps) {
   useEffect(() => {
     trackingRef.current = captureTracking();
     startedAt.current = Date.now();
-    const d = draft.load();
+    const d = props.previewOnly ? null : draft.load();
     if (d && Object.keys(d.answers).length > 0) {
       setAnswers(d.answers);
       startedAt.current = d.startedAt;
@@ -70,8 +72,8 @@ export function FormRenderer(props: FormRendererProps) {
   /* eslint-enable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
 
   useEffect(() => {
-    if (hydrated) draft.save(answers, startedAt.current);
-  }, [answers, hydrated, draft]);
+    if (hydrated && !props.previewOnly) draft.save(answers, startedAt.current);
+  }, [answers, hydrated, draft, props.previewOnly]);
 
   const visible = useMemo(() => visibleQuestions(props.questions, answers), [props.questions, answers]);
 
@@ -99,6 +101,10 @@ export function FormRenderer(props: FormRendererProps) {
     if (!v.ok) {
       setErrors(v.errors);
       scrollToFirstError(v.errors);
+      return;
+    }
+    if (props.previewOnly) {
+      setServerMessage("預覽模式：驗證通過，未有提交。");
       return;
     }
     setSubmitting(true);
@@ -154,7 +160,9 @@ export function FormRenderer(props: FormRendererProps) {
         <h1 className="text-2xl font-semibold leading-tight text-stone-900 sm:text-3xl">{props.title}</h1>
         {props.intro && <p className="mt-3 text-base leading-relaxed text-stone-600">{props.intro}</p>}
         {props.estimatedMinutes && <p className="mt-2 text-sm text-stone-500">預計約 {props.estimatedMinutes} 分鐘</p>}
-        {props.isTestEnv && (
+        {props.previewOnly ? (
+          <p className="mt-3 inline-block rounded bg-violet-100 px-2 py-1 text-xs font-semibold text-violet-800">預覽模式：不會提交或保存草稿</p>
+        ) : props.isTestEnv && (
           <p className="mt-3 inline-block rounded bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-800">TEST 環境：提交會標記為測試資料</p>
         )}
       </header>
