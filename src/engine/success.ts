@@ -3,7 +3,7 @@ import type { Answers, Cta, SuccessConfig } from "./types";
 
 export interface ResolvedCta {
   label: string;
-  href: string | null;
+  href: string;
   style: "primary" | "secondary";
 }
 
@@ -33,9 +33,11 @@ export function resolveSuccess(
   answers: Answers,
   settings: SettingsLookup,
 ): ResolvedSuccess {
-  const primary = config.primaryCta
-    ? { label: config.primaryCta.label, href: resolveHref(config.primaryCta, settings), style: "primary" as const }
-    : null;
+  let primary: ResolvedCta | null = null;
+  if (config.primaryCta) {
+    const href = resolveHref(config.primaryCta, settings);
+    if (href) primary = { label: config.primaryCta.label, href, style: "primary" };
+  }
 
   const secondary: ResolvedCta[] = [];
   for (const s of config.secondary ?? []) {
@@ -52,7 +54,7 @@ export function resolveSuccess(
   return {
     headline: config.headline,
     body: config.body,
-    primary: primary && primary.href ? primary : null,
+    primary,
     secondary,
     notes,
   };
