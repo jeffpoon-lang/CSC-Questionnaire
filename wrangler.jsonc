@@ -32,7 +32,7 @@
         {
           "binding": "DB",
           "database_name": "csc-questionnaire-staging",
-          "database_id": "REPLACE_WITH_STAGING_D1_ID",
+          "database_id": "bd26559c-8f09-42cc-96df-f9f439bc4ddd",
           "migrations_dir": "drizzle"
         }
       ]
