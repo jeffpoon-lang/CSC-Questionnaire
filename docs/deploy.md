@@ -20,6 +20,8 @@ Production 必須在 Carey 的 Cloudflare 帳戶建立；本 repo 的 `env.produ
 
 ## 首次部署（staging）
 
+> **現況（2026-09-06）**：staging 已用路線 A 部署，網址 `https://csc-questionnaire-staging.jeff-poon.workers.dev`，D1 `csc-questionnaire-staging` 已 migrate 與 seed。驗證結果見 `docs/uat-tracker.md`。
+
 D1 `csc-questionnaire-staging` 已建立、已套用 migration 並已 seed 三份表單與預設 settings，id 已寫入 `wrangler.jsonc`。以下兩條路線二選一。
 
 ### 路線 A：Cloudflare Dashboard（Workers Builds，免安裝任何工具）
@@ -37,7 +39,7 @@ D1 `csc-questionnaire-staging` 已建立、已套用 migration 並已 seed 三�
 3. **Settings → Variables and Secrets → Add**，Type 選 **Secret**：`RESEND_API_KEY`、`RESEND_FROM`、`NOTION_TOKEN`。未設定時 Email／Notion 會記錄為 `skipped`，不影響提交。（這些是 runtime secrets，與 Settings → Build 的 build variables 是兩回事。）
 4. 建立 Admin 帳戶：在瀏覽器 Console 產生密碼雜湊（密碼不會離開你的電腦），再於 **D1 → csc-questionnaire-staging → Console** 貼上 INSERT。見下方〈建立 Admin 帳戶〉。
 
-`APP_ORIGIN` 不必事先填：應用程式會以實際請求的 host 判斷 origin 與 cookie `Secure`，設定值只作為沒有請求上下文時的後備。正式網域上線後仍建議把 `env.staging.vars.APP_ORIGIN` 填成真實網址。
+`APP_ORIGIN` 不必事先填：應用程式會以實際請求的 host 判斷 origin 與 cookie `Secure`，設定值只作為沒有請求上下文時的後備。staging 的 `APP_ORIGIN` 已填成 `https://csc-questionnaire-staging.jeff-poon.workers.dev`；production 換上正式網域後同樣要更新 `env.production.vars.APP_ORIGIN`。
 
 ### 路線 B：本機 CLI
 

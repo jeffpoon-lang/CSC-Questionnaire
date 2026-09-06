@@ -5,14 +5,14 @@ interface __BaseEnv_CloudflareEnv {
 	DB: D1Database;
 	ASSETS: Fetcher;
 	APP_ENV: "staging" | "production" | "local";
-	APP_ORIGIN: "https://csc-questionnaire-staging.REPLACE_ME.workers.dev" | "https://forms.REPLACE_WITH_CAREY_DOMAIN" | "http://localhost:3000";
+	APP_ORIGIN: "https://csc-questionnaire-staging.jeff-poon.workers.dev" | "https://forms.REPLACE_WITH_CAREY_DOMAIN" | "http://localhost:3000";
 }
 declare namespace Cloudflare {
 	interface StagingEnv {
 		DB: D1Database;
 		ASSETS: Fetcher;
 		APP_ENV: "staging";
-		APP_ORIGIN: "https://csc-questionnaire-staging.REPLACE_ME.workers.dev";
+		APP_ORIGIN: "https://csc-questionnaire-staging.jeff-poon.workers.dev";
 	}
 	interface ProductionEnv {
 		DB: D1Database;

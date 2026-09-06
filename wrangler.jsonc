@@ -26,7 +26,7 @@
       "observability": { "enabled": true },
       "vars": {
         "APP_ENV": "staging",
-        "APP_ORIGIN": "https://csc-questionnaire-staging.REPLACE_ME.workers.dev"
+        "APP_ORIGIN": "https://csc-questionnaire-staging.jeff-poon.workers.dev"
       },
       "d1_databases": [
         {
