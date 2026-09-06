@@ -27,6 +27,10 @@
 | 8 | Admin 改題目並發布；舊提交仍以舊版本顯示 | ✅ 本機 | versioning e2e | |
 | 9 | Owner 權限：移除 collaborator 後仍可管理／匯出／備份 | ⬜ 交接 | docs/deploy.md 檢查清單 | |
 
+## 已知問題
+
+- **PR branch 的 Workers Build 會失敗**：Workers Builds 已啟用 non-production branch builds，而 **Non-production branch deploy command** 仍是預設的 `npx wrangler versions upload`（沒有 `--env staging`）。該命令會落到 `wrangler.jsonc` top-level 設定（name `csc-questionnaire-local`、D1 id 為佔位值），與已連結的 Worker `csc-questionnaire-staging` 不符，因此每個 PR 都會紅。修正方法見 `docs/deploy.md` 路線 A 第 3 步：把該命令改成 `npx wrangler versions upload --env staging`，或取消勾選 non-production branch builds。`main` 的正式部署命令 `npx wrangler deploy --env staging` 不受影響，staging 現時仍然正常運作。
+
 ## 已知限制
 
 - Admin 題目編輯器為 JSON 形式（有驗證、預覽、規則檢查）；視覺化編輯器留待下一階段。

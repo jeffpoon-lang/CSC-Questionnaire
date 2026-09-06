@@ -36,8 +36,16 @@ D1 `csc-questionnaire-staging` 已建立、已套用 migration 並已 seed 三�
    | Build command | `pnpm build:cf` |
    | Deploy command | `npx wrangler deploy --env staging` |
 
-3. **Settings → Variables and Secrets → Add**，Type 選 **Secret**：`RESEND_API_KEY`、`RESEND_FROM`、`NOTION_TOKEN`。未設定時 Email／Notion 會記錄為 `skipped`，不影響提交。（這些是 runtime secrets，與 Settings → Build 的 build variables 是兩回事。）
-4. 建立 Admin 帳戶：在瀏覽器 Console 產生密碼雜湊（密碼不會離開你的電腦），再於 **D1 → csc-questionnaire-staging → Console** 貼上 INSERT。見下方〈建立 Admin 帳戶〉。
+3. **Settings → Build → Branch control**：`Production branch` 設為 `main`。若勾選了 **Builds for non-production branches**，必須同時把 **Non-production branch deploy command** 改成：
+
+   ```
+   npx wrangler versions upload --env staging
+   ```
+
+   預設值是 `npx wrangler versions upload`（**沒有** `--env`），會落到本檔案 top-level 的設定 —— name 是 `csc-questionnaire-local`、D1 id 是佔位值 —— 與已連結的 Worker `csc-questionnaire-staging` 不符，每個 PR 的 build 都會失敗。不需要 PR preview 的話，直接取消勾選 non-production branch builds 亦可。
+
+4. **Settings → Variables and Secrets → Add**，Type 選 **Secret**：`RESEND_API_KEY`、`RESEND_FROM`、`NOTION_TOKEN`。未設定時 Email／Notion 會記錄為 `skipped`，不影響提交。（這些是 runtime secrets，與 Settings → Build 的 build variables 是兩回事。）
+5. 建立 Admin 帳戶：在瀏覽器 Console 產生密碼雜湊（密碼不會離開你的電腦），再於 **D1 → csc-questionnaire-staging → Console** 貼上 INSERT。見下方〈建立 Admin 帳戶〉。
 
 `APP_ORIGIN` 不必事先填：應用程式會以實際請求的 host 判斷 origin 與 cookie `Secure`，設定值只作為沒有請求上下文時的後備。staging 的 `APP_ORIGIN` 已填成 `https://csc-questionnaire-staging.jeff-poon.workers.dev`；production 換上正式網域後同樣要更新 `env.production.vars.APP_ORIGIN`。
 
