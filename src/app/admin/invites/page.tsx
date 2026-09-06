@@ -1,4 +1,5 @@
-import { getDb, getEnv } from "@/db/client";
+import { getDb } from "@/db/client";
+import { appOrigin } from "@/server/origin";
 import { listInvites, listModules } from "@/db/queries/forms";
 import { Badge, Card, btnCls, btnSecondaryCls, fmtDate, inputCls } from "@/components/admin/ui";
 import { createInviteAction, revokeInviteAction } from "./actions";
@@ -13,10 +14,9 @@ async function currentTime(): Promise<number> {
 export default async function InvitesPage() {
   const now = await currentTime();
   const db = await getDb();
-  const env = await getEnv();
   const [invites, mods] = await Promise.all([listInvites(db), listModules(db)]);
   const activeMods = mods.filter((m) => m.status === "active" && m.currentVersionId);
-  const base = env.APP_ORIGIN.replace(/\/$/, "");
+  const base = (await appOrigin()) ?? "";
   return (
     <div className="space-y-4">
       <h1 className="text-xl font-semibold">High-ticket 邀請連結</h1>

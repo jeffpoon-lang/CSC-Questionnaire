@@ -18,13 +18,33 @@ Production 必須在 Carey 的 Cloudflare 帳戶建立；本 repo 的 `env.produ
 
 > D1 免費層自 2026-09-01 起超出每日 row read／write 上限會直接回錯誤。建議 production 使用 Workers Paid。
 
-## 首次部署（staging，Jeff 帳戶）
+## 首次部署（staging）
+
+D1 `csc-questionnaire-staging` 已建立、已套用 migration 並已 seed 三份表單與預設 settings，id 已寫入 `wrangler.jsonc`。以下兩條路線二選一。
+
+### 路線 A：Cloudflare Dashboard（Workers Builds，免安裝任何工具）
+
+1. Dashboard → **Workers & Pages** → **Create application** → **Import a repository** → 選 `jeffpoon-lang/CSC-Questionnaire`。
+2. 設定：
+
+   | 欄位 | 值 |
+   |---|---|
+   | Worker name | `csc-questionnaire-staging`（**必須**與 `wrangler.jsonc` 的 `env.staging.name` 相同，否則 build 失敗） |
+   | Git branch | `main` |
+   | Build command | `pnpm build:cf` |
+   | Deploy command | `npx wrangler deploy --env staging` |
+
+3. **Settings → Variables and Secrets → Add**，Type 選 **Secret**：`RESEND_API_KEY`、`RESEND_FROM`、`NOTION_TOKEN`。未設定時 Email／Notion 會記錄為 `skipped`，不影響提交。（這些是 runtime secrets，與 Settings → Build 的 build variables 是兩回事。）
+4. 建立 Admin 帳戶：在瀏覽器 Console 產生密碼雜湊（密碼不會離開你的電腦），再於 **D1 → csc-questionnaire-staging → Console** 貼上 INSERT。見下方〈建立 Admin 帳戶〉。
+
+`APP_ORIGIN` 不必事先填：應用程式會以實際請求的 host 判斷 origin 與 cookie `Secure`，設定值只作為沒有請求上下文時的後備。正式網域上線後仍建議把 `env.staging.vars.APP_ORIGIN` 填成真實網址。
+
+### 路線 B：本機 CLI
 
 ```bash
 pnpm install
-pnpm exec wrangler login                # 以 Jeff 帳戶登入（或設定有效的 CLOUDFLARE_API_TOKEN）
-# D1 已建立：csc-questionnaire-staging（id 已寫入 wrangler.jsonc）
-pnpm db:migrate:staging                 # 如已由 MCP 套用會顯示 no migrations to apply
+pnpm exec wrangler login
+pnpm db:migrate:staging                 # 已套用時會顯示 no migrations to apply
 pnpm seed:staging                       # idempotent
 ADMIN_SEED_EMAIL=carey@example.com ADMIN_SEED_NAME="Carey" PASSWORD='<至少12字元>' pnpm seed:admin -- --env staging --remote
 pnpm exec wrangler secret put RESEND_API_KEY --env staging
@@ -33,12 +53,34 @@ pnpm exec wrangler secret put NOTION_TOKEN --env staging
 pnpm deploy:staging
 ```
 
-部署後把 `env.staging.vars.APP_ORIGIN` 改為實際 workers.dev 網址（cookie `Secure` 與 CSRF origin check 依賴它），再 deploy 一次。
+## 建立 Admin 帳戶（不需 CLI）
+
+在瀏覽器 Console 執行，把密碼換成你自己的（至少 12 字元）：
+
+```js
+(async (pw) => {
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const k = await crypto.subtle.importKey("raw", new TextEncoder().encode(pw), "PBKDF2", false, ["deriveBits"]);
+  const bits = await crypto.subtle.deriveBits({ name: "PBKDF2", hash: "SHA-256", salt, iterations: 100000 }, k, 256);
+  const b64 = (u) => btoa(String.fromCharCode(...u));
+  console.log(`pbkdf2$100000$${b64(salt)}$${b64(new Uint8Array(bits))}`);
+})("換成你的密碼");
+```
+
+把輸出的 `pbkdf2$...` 貼入以下 SQL，於 D1 Console 執行：
+
+```sql
+INSERT INTO admin_users (id, email, password_hash, display_name, role, failed_attempts, locked_until, created_at, last_login_at)
+VALUES ('admin_owner', 'owner@example.com', '貼上 pbkdf2$...', 'Owner', 'owner', 0, NULL, unixepoch()*1000, NULL)
+ON CONFLICT(email) DO UPDATE SET password_hash = excluded.password_hash, failed_attempts = 0, locked_until = NULL;
+```
+
+系統目前沒有「更改密碼」介面；要換密碼就重新執行同一段 SQL（`ON CONFLICT` 會覆蓋雜湊）。
 
 ## Production（Carey 帳戶）
 
 1. 在 Carey 帳戶 `wrangler d1 create csc-questionnaire-production`，把 id 填入 `env.production.d1_databases`。
-2. 設定 custom domain（`env.production.routes`）與 `APP_ORIGIN`。
+2. 設定 custom domain（`env.production.routes`）與 `APP_ORIGIN`。Workers Builds 亦可用同樣方式連接，Worker 名須為 `csc-questionnaire`、deploy command 為 `npx wrangler deploy --env production`。
 3. `pnpm db:migrate:prod && pnpm seed:sql && wrangler d1 execute DB --env production --remote --file drizzle/seed/0001_forms.sql`。
 4. `pnpm seed:admin -- --env production --remote`（owner 帳戶）。
 5. 三個 secrets + `pnpm deploy:prod`。

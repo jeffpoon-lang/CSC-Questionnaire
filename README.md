@@ -3,6 +3,7 @@
 Carey Cheung／Acaredemy《眉煩惱得億的黃金三角創業系統》Sales Funnel 的問卷平台：三個入口（Community 7 題、Generic CSC 20 題、High-ticket 34 題 + invite-only Tailored Module）共用一個 schema-driven 引擎、D1 主資料庫、Admin、Email 摘要與 Notion 單向同步。
 
 - 技術：Next.js 16 · @opennextjs/cloudflare · Cloudflare Workers + D1 · Drizzle · zod · Resend · Notion API
+- 部署：Cloudflare Dashboard 的 Workers Builds（Git 整合，免 CLI）或本機 `pnpm deploy:staging`；兩者步驟見 [部署與環境](docs/deploy.md)
 - 文件：[部署與環境](docs/deploy.md) · [Admin 手冊](docs/admin-handbook.md) · [Data Dictionary](docs/data-dictionary.md) · [Notion Mapping](docs/notion-mapping.md) · [UAT Tracker](docs/uat-tracker.md)
 
 ## 路徑
