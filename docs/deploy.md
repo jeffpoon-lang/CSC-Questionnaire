@@ -89,6 +89,8 @@ ON CONFLICT(email) DO UPDATE SET password_hash = excluded.password_hash, failed_
 
 ## Production（Carey 帳戶）
 
+> 上線當日的完整逐步流程見 **[Production Runbook](production-runbook.md)**；本節只列環境設定本身。
+
 1. 在 Carey 帳戶 `wrangler d1 create csc-questionnaire-production`，把 id 填入 `env.production.d1_databases`。
 2. 設定 custom domain（`env.production.routes`）與 `APP_ORIGIN`。Workers Builds 亦可用同樣方式連接，Worker 名須為 `csc-questionnaire`、deploy command 為 `npx wrangler deploy --env production`。
 3. `pnpm db:migrate:prod && pnpm seed:sql && wrangler d1 execute DB --env production --remote --file drizzle/seed/0001_forms.sql`。

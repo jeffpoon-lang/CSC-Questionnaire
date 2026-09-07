@@ -1,7 +1,9 @@
 import { expect, test } from "@playwright/test";
-import { adminLogin } from "./helpers";
+import { adminLogin, seedCommunitySubmission } from "./helpers";
 
-test("admin: login, list, detail, status update, csv export, notion retry, logout", async ({ page }) => {
+test("admin: login, list, detail, status update, csv export, notion retry, logout", async ({ page, request }) => {
+  await seedCommunitySubmission(request, "E2E Admin 種子");
+
   await page.goto("/admin");
   await expect(page).toHaveURL(/\/admin\/login/);
   await adminLogin(page);

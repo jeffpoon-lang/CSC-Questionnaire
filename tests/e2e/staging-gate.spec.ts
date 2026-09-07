@@ -17,6 +17,10 @@ const PASSWORD = process.env.E2E_ADMIN_PASSWORD ?? "";
 
 test.describe.configure({ mode: "serial" });
 
+// Not part of the default local run: it needs a throwaway admin on a deployed
+// environment, and its lockout case deliberately locks that account.
+test.skip(!EMAIL || !PASSWORD, "set E2E_ADMIN_EMAIL and E2E_ADMIN_PASSWORD to run the staging gate");
+
 test("gate 1 + 6: login, dashboard, CSV export, logout", async ({ page }) => {
   await page.goto("/admin");
   await expect(page).toHaveURL(/\/admin\/login/);
