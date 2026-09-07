@@ -9,9 +9,17 @@ export interface SummaryInput {
   adminUrl: string | null;
 }
 
-function labelFor(q: Question, v: unknown): string {
+function labelFor(q: Question, v: unknown, allQuestions: Question[]): string {
   if (q.type === "single_select" || q.type === "multi_select") {
-    const opts = q.options ?? [];
+    // A question with `optionsFrom` (G09) carries no static options of its
+    // own — its labels live on the source question, plus whatever the rule
+    // appends. Without this the email prints the raw value.
+    const src = q.optionsFrom ? allQuestions.find((x) => x.id === q.optionsFrom?.questionId) : undefined;
+    const opts = [
+      ...(q.options ?? []),
+      ...(src && "options" in src ? src.options ?? [] : []),
+      ...(q.optionsFrom?.append ?? []),
+    ];
     const vals = Array.isArray(v) ? v : [v];
     return vals.map((x) => opts.find((o) => o.value === x)?.label ?? String(x)).join("、");
   }
@@ -35,7 +43,7 @@ export function buildSummary(input: SummaryInput): { subject: string; text: stri
     if (!q.tag) continue;
     const v = s.answersJson[q.id];
     if (v === undefined || v === null || v === "" || (Array.isArray(v) && v.length === 0)) continue;
-    tags.push([q.label, labelFor(q, v)]);
+    tags.push([q.label, labelFor(q, v, questions)]);
   }
 
   const meta: Array<[string, string]> = [

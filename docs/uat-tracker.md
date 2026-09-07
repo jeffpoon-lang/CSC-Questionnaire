@@ -6,7 +6,7 @@
 |---|---|---|---|---|
 | 1 | Admin 登入／登出；錯誤密碼拒絕；5 次鎖定 | ✅ `tests/e2e/admin.spec.ts` | ✅ 全部通過 | 見下方〈Staging 驗證紀錄〉 |
 | 2 | 三份表單提交 → lead + submission + tags 原子寫入 | ✅ community／generic／high-ticket e2e + D1 查證 | ✅ 三份各提交 1 份 TEST，D1 見 5 submissions／4 leads／70 tags；honeypot 提交回假 200 且**無**寫入 | `db.batch` |
-| 3 | Email 摘要（無長答） | ✅ 無 API key → `email_log.status=skipped`；模板 unit 檢查 | ⚠️ `email_log.status=skipped`（`RESEND_API_KEY not set`），符合預期 | 待設 RESEND_API_KEY 後重驗 |
+| 3 | Email 摘要（無長答） | ✅ 模板 unit 檢查（`tests/unit/engine/email-summary.test.ts`） | ✅ 已寄出並核對內容 | 見〈Gate 3 #3 驗證紀錄〉 |
 | 4 | Notion 同步 + page id | ✅ 無 token → `skipped`，log 正確 | ⚠️ `notion_sync_status=skipped`（`NOTION_TOKEN not set`），符合預期 | 待設 NOTION_TOKEN + database 後重驗 |
 | 5 | 草稿續填（reload 還原；成功後清除） | ✅ community e2e | ⬜ 需瀏覽器操作 | localStorage，只可由真人覆核 |
 | 6 | CSV 匯出 | ✅ admin e2e（download） | ✅ 全部通過 | 預設排除 TEST 資料，須 `?test=1` 才匯出 |
@@ -96,3 +96,30 @@ Admin 帳戶已建立（`admin_owner`，`last_login_at` 有值 —— 真人登�
 Gate 3 現況：#1、#2、#6、#7 已在 staging 通過；#5 待真人用瀏覽器覆核；#3、#4、#8 待 Resend／Notion。
 
 ⚠️ staging D1 現有 **6** 筆 `is_test=1` 資料（原 5 筆，加 Jeff 自行測試提交的一筆），上 production 前須清除或隔離。
+
+## Gate 3 #3 驗證紀錄（Email 摘要，2026-09-07）
+
+Resend API key 已設為 Worker secret，`notification_recipients` 已填。提交一份 TEST（`generic_csc`，
+五條長答全部植入可辨識字串）後：
+
+| 檢查 | 結果 |
+|---|---|
+| `email_log.status` | ✅ `sent`，有 Resend provider id |
+| Subject | ✅ `[TEST] [CSC] 新提交｜了解你的創業現況｜…` —— TEST 提交有前綴 |
+| 長答（G10／G11／G12／G13／G16） | ✅ text 同 html 都完全冇出現 |
+| 主要標籤 | ✅ 九條 `tag:true` 題目，全部顯示中文選項標籤 |
+| Admin 連結 | ✅ 用 `settings.admin_base_url` 組成 |
+| 提交本身 | ✅ 不受 email 結果影響（先回 200，email 在背景送） |
+
+**Resend 未驗證網域時的限制（實測確認）**：用測試寄件人 `onboarding@resend.dev` 時，
+只可以寄去 Resend 帳戶本身的電郵地址；寄去其他收件人會回
+`You can only send testing emails to your own email address (…)`，
+`email_log` 記為 `failed` 並帶完整原因，提交不受影響。官方文件沒有寫明這一點。
+**Production 必須用 Carey 已驗證的寄件網域**，否則通知只寄得到帳戶持有人自己。
+
+驗證期間 `notification_recipients` 暫時改成 Resend 帳戶電郵；正式收件人名單由 Carey／Jojo 決定後在
+Admin 設定頁填回。
+
+**同時修正**：email 模板的 `labelFor` 沒有處理 `optionsFrom`，令 G09 印出原始值 `team_delegation`
+而非「招聘、培訓、留人或授權」。Notion mapper 與 Admin 詳情頁本來已正確處理，只有 email 漏了。
+已修正並補上會重現該 bug 的單元測試。
