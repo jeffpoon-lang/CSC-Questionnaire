@@ -63,17 +63,19 @@ pnpm deploy:staging
 
 ## 建立 Admin 帳戶（不需 CLI）
 
-在瀏覽器 Console 執行，把密碼換成你自己的（至少 12 字元）：
+在 **staging 網站本身**（或任何 https 頁面）按 F12 開 Console 執行 —— `crypto.subtle` 在非安全來源不可用。把密碼換成你自己的（至少 12 字元）：
 
 ```js
-(async (pw) => {
+await (async (pw) => {
   const salt = crypto.getRandomValues(new Uint8Array(16));
   const k = await crypto.subtle.importKey("raw", new TextEncoder().encode(pw), "PBKDF2", false, ["deriveBits"]);
   const bits = await crypto.subtle.deriveBits({ name: "PBKDF2", hash: "SHA-256", salt, iterations: 100000 }, k, 256);
   const b64 = (u) => btoa(String.fromCharCode(...u));
-  console.log(`pbkdf2$100000$${b64(salt)}$${b64(new Uint8Array(bits))}`);
+  return `pbkdf2$100000$${b64(salt)}$${b64(new Uint8Array(bits))}`;
 })("換成你的密碼");
 ```
+
+雜湊會直接當作執行結果印出來，不受 Console 的 log level 過濾影響（用 `console.log` 的版本在 Info 被隱藏時看似只回傳 `Promise {<pending>}`）。密碼只在本機運算，不會送出；但它會留在 Console 歷史裡，所以不要截圖或轉貼那一行。
 
 把輸出的 `pbkdf2$...` 貼入以下 SQL，於 D1 Console 執行：
 

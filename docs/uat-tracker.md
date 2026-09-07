@@ -4,14 +4,14 @@
 
 | # | 項目 | 本機 workerd（`pnpm preview` + Playwright／curl） | Staging（Jeff 帳戶） | 備註 |
 |---|---|---|---|---|
-| 1 | Admin 登入／登出；錯誤密碼拒絕；5 次鎖定 | ✅ `tests/e2e/admin.spec.ts` | ⚠️ 部分：`/admin/*` 未登入一律 307 去 `/admin/login?next=…`、`/api/admin/export` 回 401 | 完整登入／鎖定待 Jeff 建立 Admin 帳戶後覆核 |
+| 1 | Admin 登入／登出；錯誤密碼拒絕；5 次鎖定 | ✅ `tests/e2e/admin.spec.ts` | ✅ 全部通過 | 見下方〈Staging 驗證紀錄〉 |
 | 2 | 三份表單提交 → lead + submission + tags 原子寫入 | ✅ community／generic／high-ticket e2e + D1 查證 | ✅ 三份各提交 1 份 TEST，D1 見 5 submissions／4 leads／70 tags；honeypot 提交回假 200 且**無**寫入 | `db.batch` |
-| 3 | Email 摘要（無長答） | ✅ 無 API key → `email_log.status=skipped`；模板 unit 檢查 | ⚠️ `email_log.status=skipped`（`RESEND_API_KEY not set`），符合預期 | 待設 RESEND_API_KEY 後重驗 |
-| 4 | Notion 同步 + page id | ✅ 無 token → `skipped`，log 正確 | ⚠️ `notion_sync_status=skipped`（`NOTION_TOKEN not set`），符合預期 | 待設 NOTION_TOKEN + database 後重驗 |
-| 5 | 草稿續填（reload 還原；成功後清除） | ✅ community e2e | ⬜ 需瀏覽器操作 | localStorage，Jeff 手動覆核 |
-| 6 | CSV 匯出 | ✅ admin e2e（download） | ⚠️ 未登入正確回 401 | 待 Admin 帳戶後覆核下載 |
+| 3 | Email 摘要（無長答） | ✅ 模板 unit 檢查（`tests/unit/engine/email-summary.test.ts`） | ✅ 已寄出並核對內容 | 見〈Gate 3 #3 驗證紀錄〉 |
+| 4 | Notion 同步 + page id | ✅ 無 token → `skipped`，log 正確 | ✅ 已建立 page 並記錄 id | 見〈Gate 3 #4／#8 驗證紀錄〉 |
+| 5 | 草稿續填（reload 還原；成功後清除） | ✅ community e2e | ⬜ 需瀏覽器操作 | localStorage，只可由真人覆核 |
+| 6 | CSV 匯出 | ✅ admin e2e（download） | ✅ 全部通過 | 預設排除 TEST 資料，須 `?test=1` 才匯出 |
 | 7 | form_version／utm／landing_page／cta／consent／entry_mode／is_test | ✅ D1 查證 + invite e2e | ✅ 五筆 row 全部欄位齊；電話已正規化 E.164、電郵已轉小寫 | |
-| 8 | Notion 失敗不影響提交；修正後 Admin 重試成功 | ✅ 提交成功、狀態 skipped、重試按鈕可用 | ⚠️ 提交成功、狀態 skipped、log 有原因 | 設好 token 後用錯誤 database id 實測 |
+| 8 | Notion 失敗不影響提交；修正後 Admin 重試成功 | ✅ 提交成功、狀態 skipped、重試按鈕可用 | ✅ 用錯誤 database id 完整實測 | 見〈Gate 3 #4／#8 驗證紀錄〉 |
 
 ## UAT 九項（計劃書 Gate 4）
 
@@ -23,7 +23,7 @@
 | 4 | Tailored Module 只在邀請連結出現、版本記錄 | ✅ 本機 | `tests/e2e/versioning-invites.spec.ts` | |
 | 5 | Consent：application 必填、marketing 預設否 | ✅ unit + e2e | `tests/unit/engine/zod.test.ts` | |
 | 6 | 重覆提交標記 duplicate_of | ✅ staging | 同一電郵 30 日內提交同一表單兩次 → Admin 顯示「重覆」 | 第二筆 `duplicate_of` 有值，兩筆共用同一 `lead_id` |
-| 7 | Notion 失敗重試 | ⬜ staging | 設錯 database id → 提交 → failed → 改正 → 重試 → synced | |
+| 7 | Notion 失敗重試 | ✅ staging | 設錯 database id → 提交 → failed → 改正 → 重試 → synced | 三次 attempt 的 log 齊全 |
 | 8 | Admin 改題目並發布；舊提交仍以舊版本顯示 | ✅ 本機 | versioning e2e | |
 | 9 | Owner 權限：移除 collaborator 後仍可管理／匯出／備份 | ⬜ 交接 | docs/deploy.md 檢查清單 | |
 
@@ -65,3 +65,100 @@
 尚待 Jeff／Carey 完成：Admin 帳戶（Gate 3 #1、#6）、草稿續填手動覆核（#5）、Resend（#3）、Notion（#4、#8）。
 
 ⚠️ staging D1 內目前有 5 筆 `is_test=1` 的 TEST 資料，上 production 前須清除或隔離（計劃書 §10）。
+
+## Staging 驗證紀錄（第二輪，2026-09-07）
+
+Admin 帳戶已建立（`admin_owner`，`last_login_at` 有值 —— 真人登入成功）。Gate 3 #1 同 #6 用一個臨時
+`admin_gate_test` 帳戶完成驗證，驗完即時連同其 session 一併刪除；過程中沒有觸碰 owner 帳戶
+（驗證後 `admin_owner` 仍然 `failed_attempts=0`、未鎖定、session 完好）。
+
+> 本容器的 Chromium 無法經 egress proxy 完成 TLS（任何網站都 `ERR_CONNECTION_RESET`），
+> 因此改以 `curl` 驅動 Next.js server action 的無 JS 表單路徑完成驗證。
+> `tests/e2e/staging-gate.spec.ts` 保留同一組檢查的 Playwright 版本，供有正常瀏覽器出口的環境使用。
+
+| 檢查 | 結果 |
+|---|---|
+| 正確密碼登入 | ✅ 303 → `/admin`；cookie `csc_admin` 帶 `Secure`、`HttpOnly`、`SameSite=lax`、14 日到期 |
+| 登入後 `/admin`、`/admin/submissions` | ✅ 200，顯示總覽 |
+| CSV 匯出（預設） | ✅ 200，`text/csv; charset=utf-8`，檔名 `csc-submissions-all-<日期>.csv`，帶 UTF-8 BOM；**只有標頭列** |
+| CSV 匯出 `?test=1` | ✅ 6 筆 TEST 提交全部匯出，欄位齊全 |
+| CSV 匯出 `?test=1&form=generic_csc` | ✅ 49 欄，末端為 G01–G20 題目文字欄（含長答 G10） |
+| 登出 | ✅ 303 → `/admin/login`；cookie 以 1970 到期日清除；**`sessions` 資料列亦已刪除**（非只清 cookie） |
+| 登出後 `/admin` | ✅ 307 → `/admin/login?next=%2Fadmin` |
+| 登出後 `/api/admin/export` | ✅ 401 |
+| 錯誤密碼 ×4 | ✅ 每次顯示「電郵或密碼不正確」，不透露帳戶是否存在 |
+| 第 5 次錯誤 | ✅ 顯示「嘗試次數過多，帳戶已暫時鎖定 15 分鐘」 |
+| 鎖定期間用正確密碼 | ✅ 仍被拒，顯示 15 分鐘訊息 |
+| D1 狀態 | ✅ TEST 帳戶 `failed_attempts=5`、`locked_until` 有值；owner 帳戶不受影響 |
+
+**CSV 預設排除 TEST 資料是刻意設計**（`includeTest` 預設 false），符合計劃書「測試資料不可流入營運輸出」的要求。
+
+Gate 3 現況：#1、#2、#6、#7 已在 staging 通過；#5 待真人用瀏覽器覆核；#3、#4、#8 待 Resend／Notion。
+
+⚠️ staging D1 現有 **6** 筆 `is_test=1` 資料（原 5 筆，加 Jeff 自行測試提交的一筆），上 production 前須清除或隔離。
+
+## Gate 3 #3 驗證紀錄（Email 摘要，2026-09-07）
+
+Resend API key 已設為 Worker secret，`notification_recipients` 已填。提交一份 TEST（`generic_csc`，
+五條長答全部植入可辨識字串）後：
+
+| 檢查 | 結果 |
+|---|---|
+| `email_log.status` | ✅ `sent`，有 Resend provider id |
+| Subject | ✅ `[TEST] [CSC] 新提交｜了解你的創業現況｜…` —— TEST 提交有前綴 |
+| 長答（G10／G11／G12／G13／G16） | ✅ text 同 html 都完全冇出現 |
+| 主要標籤 | ✅ 九條 `tag:true` 題目，全部顯示中文選項標籤 |
+| Admin 連結 | ✅ 用 `settings.admin_base_url` 組成 |
+| 提交本身 | ✅ 不受 email 結果影響（先回 200，email 在背景送） |
+
+**Resend 未驗證網域時的限制（實測確認）**：用測試寄件人 `onboarding@resend.dev` 時，
+只可以寄去 Resend 帳戶本身的電郵地址；寄去其他收件人會回
+`You can only send testing emails to your own email address (…)`，
+`email_log` 記為 `failed` 並帶完整原因，提交不受影響。官方文件沒有寫明這一點。
+**Production 必須用 Carey 已驗證的寄件網域**，否則通知只寄得到帳戶持有人自己。
+
+驗證期間 `notification_recipients` 暫時改成 Resend 帳戶電郵；正式收件人名單由 Carey／Jojo 決定後在
+Admin 設定頁填回。
+
+**同時修正**：email 模板的 `labelFor` 沒有處理 `optionsFrom`，令 G09 印出原始值 `team_delegation`
+而非「招聘、培訓、留人或授權」。Notion mapper 與 Admin 詳情頁本來已正確處理，只有 email 漏了。
+已修正並補上會重現該 bug 的單元測試。
+
+## Gate 3 #4／#8 與 Gate 4 #7 驗證紀錄（Notion，2026-09-07）
+
+三個 Notion database 已在 staging workspace 建立，property 名稱與類型依 `docs/notion-mapping.md`；
+database id 以 `ds:<data_source_id>` 形式填入設定（`@notionhq/client` 5.x 走新版 API，data source 形式較穩妥）。
+
+| 檢查 | 結果 |
+|---|---|
+| 同步建立 page | ✅ 九筆 TEST 提交全部 `synced`，各自記錄 `notion_page_id` |
+| Generic CSC 欄位 | ✅ 姓名／WhatsApp／電郵／行業／創業階段／團隊規模／三個痛點／首要問題／90 日目標／意向支援／認識渠道 + 共同欄位 |
+| High-ticket 欄位 | ✅ 24 個對應欄位齊全，`準備度` 為 Number，`入口` 為「公開」 |
+| Community 欄位 | ✅ 稱呼／行業／階段／最想突破／90 日改變／內容意向／推廣同意 + 共同欄位 |
+| 長答 | ✅ Notion page body 一律空白；High-ticket 的 Q14／Q15／Q17／Q18／Q19／Q27 完全沒有同步 |
+| Generic CSC 的 G11 | ✅ 依計劃書 §6 **刻意**同步為「90 日目標」；G10／G12／G13／G16 沒有同步 |
+| 動態選項標籤 | ✅ G09（`optionsFrom`）在 Notion 顯示中文標籤而非原始值 |
+| Select 值含逗號 | ✅ `cleanSelect` 將半形逗號轉為全形（Notion select 不接受逗號），例如「USD 13，001–40，000」 |
+
+### 失敗與重試（#8 / Gate 4 #7）
+
+刻意把 `notion_db_community` 設為不存在的 id 後提交：
+
+| 階段 | 結果 |
+|---|---|
+| 提交 | ✅ HTTP 200，成功頁正常，row 正常寫入 D1 |
+| `notion_sync_status` | ✅ `failed`（不會假裝成功） |
+| attempt 0 | `pending`，`triggered_by=submit`（提交時同批寫入） |
+| attempt 1 | `failed`，`triggered_by=auto`，錯誤原文完整保留 |
+| 改正 id 後按 Admin「重試未同步」 | ✅ attempt 2 `success`，`triggered_by=admin:<操作者電郵>` |
+| 結果 | ✅ `synced` 並取得 `notion_page_id` |
+
+### 狀態推送（update 而非新增）
+
+在 Admin 把該筆改為「已聯絡」後，Notion 上**同一個 page**（page id 不變）的「跟進狀態」更新為
+「已聯絡」，沒有產生第二個 page —— 同步是 idempotent 的。
+
+本輪使用臨時 `admin_notion_test` 帳戶驅動 Admin 動作，驗證後連同 session 一併刪除；owner 帳戶未受影響。
+
+⚠️ 依計劃書 §9，production 的 Notion workspace 與 integration 必須由 Carey 或其指定帳戶持有 owner 權限，
+需另建一套 database 並重新填設定。
