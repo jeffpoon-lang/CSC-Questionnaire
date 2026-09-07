@@ -1,20 +1,30 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
-  "name": "csc-questionnaire-local",
+  // The top-level (default) environment is staging. Wrangler commands run
+  // without `--env` resolve here, and Workers Builds' default non-production
+  // branch deploy command is exactly that: `npx wrangler versions upload`.
+  // A placeholder database_id here fails every PR build with
+  // "D1 binding 'DB' references database '000...' which was not found".
+  // Local dev and `pnpm preview` also use this block, but with `--local` /
+  // Miniflare storage, so they never touch the remote database.
+  // CAUTION: because of this, a `--remote` wrangler command without `--env`
+  // now targets staging. Always pass `--env` for remote D1 work.
+  "name": "csc-questionnaire-staging",
   "main": ".open-next/worker.js",
   "compatibility_date": "2026-08-25",
   "compatibility_flags": ["nodejs_compat"],
   "assets": { "directory": ".open-next/assets", "binding": "ASSETS" },
   "observability": { "enabled": true },
+  "workers_dev": true,
   "vars": {
-    "APP_ENV": "local",
-    "APP_ORIGIN": "http://localhost:3000"
+    "APP_ENV": "staging",
+    "APP_ORIGIN": "https://csc-questionnaire-staging.jeff-poon.workers.dev"
   },
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "csc-questionnaire-local",
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      "database_name": "csc-questionnaire-staging",
+      "database_id": "bd26559c-8f09-42cc-96df-f9f439bc4ddd",
       "migrations_dir": "drizzle"
     }
   ],
@@ -26,7 +36,7 @@
       "observability": { "enabled": true },
       "vars": {
         "APP_ENV": "staging",
-        "APP_ORIGIN": "https://csc-questionnaire-staging.REPLACE_ME.workers.dev"
+        "APP_ORIGIN": "https://csc-questionnaire-staging.jeff-poon.workers.dev"
       },
       "d1_databases": [
         {

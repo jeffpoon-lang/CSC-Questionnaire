@@ -3,7 +3,11 @@
 ## 架構
 
 Next.js 16（App Router）→ `@opennextjs/cloudflare` → Cloudflare Workers；資料庫 Cloudflare D1（Drizzle ORM）；Email Resend；Notion 單向同步。
-`wrangler.jsonc` 定義三個環境：top-level（local）、`staging`、`production`。**env 不會繼承 binding**，每個 env 都要寫齊 `d1_databases` 與 `assets`。
+`wrangler.jsonc` 的 **top-level（預設）環境就是 staging**，另有具名的 `staging` 與 `production`。**env 不會繼承 binding**，每個 env 都要寫齊 `d1_databases` 與 `assets`。
+
+> top-level 必須是一個可實際部署的設定：任何不帶 `--env` 的 wrangler 指令都會落到這裡，而 Workers Builds 的 non-production branch 預設部署指令正是 `npx wrangler versions upload`（無 `--env`）。以前這裡放的是佔位 D1 id，令每個 PR build 都以 `D1 binding 'DB' references database '00000000-…' which was not found [code: 10181]` 失敗。
+>
+> **代價**：不帶 `--env` 的 `--remote` 指令現在會打到 staging。做遠端 D1 操作時一律要加 `--env`。本機開發（`pnpm dev`、`pnpm preview`、`pnpm db:migrate:local`、`pnpm seed:local`）行的是 Miniflare 本機儲存，不會碰到遠端資料庫。
 
 ## 帳戶與擁有權（計劃書 §9）
 
@@ -20,6 +24,8 @@ Production 必須在 Carey 的 Cloudflare 帳戶建立；本 repo 的 `env.produ
 
 ## 首次部署（staging）
 
+> **現況（2026-09-06）**：staging 已用路線 A 部署，網址 `https://csc-questionnaire-staging.jeff-poon.workers.dev`，D1 `csc-questionnaire-staging` 已 migrate 與 seed。驗證結果見 `docs/uat-tracker.md`。
+
 D1 `csc-questionnaire-staging` 已建立、已套用 migration 並已 seed 三份表單與預設 settings，id 已寫入 `wrangler.jsonc`。以下兩條路線二選一。
 
 ### 路線 A：Cloudflare Dashboard（Workers Builds，免安裝任何工具）
@@ -34,10 +40,12 @@ D1 `csc-questionnaire-staging` 已建立、已套用 migration 並已 seed 三�
    | Build command | `pnpm build:cf` |
    | Deploy command | `npx wrangler deploy --env staging` |
 
-3. **Settings → Variables and Secrets → Add**，Type 選 **Secret**：`RESEND_API_KEY`、`RESEND_FROM`、`NOTION_TOKEN`。未設定時 Email／Notion 會記錄為 `skipped`，不影響提交。（這些是 runtime secrets，與 Settings → Build 的 build variables 是兩回事。）
-4. 建立 Admin 帳戶：在瀏覽器 Console 產生密碼雜湊（密碼不會離開你的電腦），再於 **D1 → csc-questionnaire-staging → Console** 貼上 INSERT。見下方〈建立 Admin 帳戶〉。
+3. **Settings → Build → Branch control**：`Production branch` 設為 `main`。**Builds for non-production branches** 勾唔勾都可以 —— top-level 設定本身就是可部署的 staging，所以預設的 `npx wrangler versions upload` 亦行得通，會為每個 PR 產生 preview 版本而不影響 live deployment。
 
-`APP_ORIGIN` 不必事先填：應用程式會以實際請求的 host 判斷 origin 與 cookie `Secure`，設定值只作為沒有請求上下文時的後備。正式網域上線後仍建議把 `env.staging.vars.APP_ORIGIN` 填成真實網址。
+4. **Settings → Variables and Secrets → Add**，Type 選 **Secret**：`RESEND_API_KEY`、`RESEND_FROM`、`NOTION_TOKEN`。未設定時 Email／Notion 會記錄為 `skipped`，不影響提交。（這些是 runtime secrets，與 Settings → Build 的 build variables 是兩回事。）
+5. 建立 Admin 帳戶：在瀏覽器 Console 產生密碼雜湊（密碼不會離開你的電腦），再於 **D1 → csc-questionnaire-staging → Console** 貼上 INSERT。見下方〈建立 Admin 帳戶〉。
+
+`APP_ORIGIN` 不必事先填：應用程式會以實際請求的 host 判斷 origin 與 cookie `Secure`，設定值只作為沒有請求上下文時的後備。staging 的 `APP_ORIGIN` 已填成 `https://csc-questionnaire-staging.jeff-poon.workers.dev`；production 換上正式網域後同樣要更新 `env.production.vars.APP_ORIGIN`。
 
 ### 路線 B：本機 CLI
 
