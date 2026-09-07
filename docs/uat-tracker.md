@@ -4,12 +4,12 @@
 
 | # | 項目 | 本機 workerd（`pnpm preview` + Playwright／curl） | Staging（Jeff 帳戶） | 備註 |
 |---|---|---|---|---|
-| 1 | Admin 登入／登出；錯誤密碼拒絕；5 次鎖定 | ✅ `tests/e2e/admin.spec.ts` | ⚠️ 部分：`/admin/*` 未登入一律 307 去 `/admin/login?next=…`、`/api/admin/export` 回 401 | 完整登入／鎖定待 Jeff 建立 Admin 帳戶後覆核 |
+| 1 | Admin 登入／登出；錯誤密碼拒絕；5 次鎖定 | ✅ `tests/e2e/admin.spec.ts` | ✅ 全部通過 | 見下方〈Staging 驗證紀錄〉 |
 | 2 | 三份表單提交 → lead + submission + tags 原子寫入 | ✅ community／generic／high-ticket e2e + D1 查證 | ✅ 三份各提交 1 份 TEST，D1 見 5 submissions／4 leads／70 tags；honeypot 提交回假 200 且**無**寫入 | `db.batch` |
 | 3 | Email 摘要（無長答） | ✅ 無 API key → `email_log.status=skipped`；模板 unit 檢查 | ⚠️ `email_log.status=skipped`（`RESEND_API_KEY not set`），符合預期 | 待設 RESEND_API_KEY 後重驗 |
 | 4 | Notion 同步 + page id | ✅ 無 token → `skipped`，log 正確 | ⚠️ `notion_sync_status=skipped`（`NOTION_TOKEN not set`），符合預期 | 待設 NOTION_TOKEN + database 後重驗 |
-| 5 | 草稿續填（reload 還原；成功後清除） | ✅ community e2e | ⬜ 需瀏覽器操作 | localStorage，Jeff 手動覆核 |
-| 6 | CSV 匯出 | ✅ admin e2e（download） | ⚠️ 未登入正確回 401 | 待 Admin 帳戶後覆核下載 |
+| 5 | 草稿續填（reload 還原；成功後清除） | ✅ community e2e | ⬜ 需瀏覽器操作 | localStorage，只可由真人覆核 |
+| 6 | CSV 匯出 | ✅ admin e2e（download） | ✅ 全部通過 | 預設排除 TEST 資料，須 `?test=1` 才匯出 |
 | 7 | form_version／utm／landing_page／cta／consent／entry_mode／is_test | ✅ D1 查證 + invite e2e | ✅ 五筆 row 全部欄位齊；電話已正規化 E.164、電郵已轉小寫 | |
 | 8 | Notion 失敗不影響提交；修正後 Admin 重試成功 | ✅ 提交成功、狀態 skipped、重試按鈕可用 | ⚠️ 提交成功、狀態 skipped、log 有原因 | 設好 token 後用錯誤 database id 實測 |
 
@@ -65,3 +65,34 @@
 尚待 Jeff／Carey 完成：Admin 帳戶（Gate 3 #1、#6）、草稿續填手動覆核（#5）、Resend（#3）、Notion（#4、#8）。
 
 ⚠️ staging D1 內目前有 5 筆 `is_test=1` 的 TEST 資料，上 production 前須清除或隔離（計劃書 §10）。
+
+## Staging 驗證紀錄（第二輪，2026-09-07）
+
+Admin 帳戶已建立（`admin_owner`，`last_login_at` 有值 —— 真人登入成功）。Gate 3 #1 同 #6 用一個臨時
+`admin_gate_test` 帳戶完成驗證，驗完即時連同其 session 一併刪除；過程中沒有觸碰 owner 帳戶
+（驗證後 `admin_owner` 仍然 `failed_attempts=0`、未鎖定、session 完好）。
+
+> 本容器的 Chromium 無法經 egress proxy 完成 TLS（任何網站都 `ERR_CONNECTION_RESET`），
+> 因此改以 `curl` 驅動 Next.js server action 的無 JS 表單路徑完成驗證。
+> `tests/e2e/staging-gate.spec.ts` 保留同一組檢查的 Playwright 版本，供有正常瀏覽器出口的環境使用。
+
+| 檢查 | 結果 |
+|---|---|
+| 正確密碼登入 | ✅ 303 → `/admin`；cookie `csc_admin` 帶 `Secure`、`HttpOnly`、`SameSite=lax`、14 日到期 |
+| 登入後 `/admin`、`/admin/submissions` | ✅ 200，顯示總覽 |
+| CSV 匯出（預設） | ✅ 200，`text/csv; charset=utf-8`，檔名 `csc-submissions-all-<日期>.csv`，帶 UTF-8 BOM；**只有標頭列** |
+| CSV 匯出 `?test=1` | ✅ 6 筆 TEST 提交全部匯出，欄位齊全 |
+| CSV 匯出 `?test=1&form=generic_csc` | ✅ 49 欄，末端為 G01–G20 題目文字欄（含長答 G10） |
+| 登出 | ✅ 303 → `/admin/login`；cookie 以 1970 到期日清除；**`sessions` 資料列亦已刪除**（非只清 cookie） |
+| 登出後 `/admin` | ✅ 307 → `/admin/login?next=%2Fadmin` |
+| 登出後 `/api/admin/export` | ✅ 401 |
+| 錯誤密碼 ×4 | ✅ 每次顯示「電郵或密碼不正確」，不透露帳戶是否存在 |
+| 第 5 次錯誤 | ✅ 顯示「嘗試次數過多，帳戶已暫時鎖定 15 分鐘」 |
+| 鎖定期間用正確密碼 | ✅ 仍被拒，顯示 15 分鐘訊息 |
+| D1 狀態 | ✅ TEST 帳戶 `failed_attempts=5`、`locked_until` 有值；owner 帳戶不受影響 |
+
+**CSV 預設排除 TEST 資料是刻意設計**（`includeTest` 預設 false），符合計劃書「測試資料不可流入營運輸出」的要求。
+
+Gate 3 現況：#1、#2、#6、#7 已在 staging 通過；#5 待真人用瀏覽器覆核；#3、#4、#8 待 Resend／Notion。
+
+⚠️ staging D1 現有 **6** 筆 `is_test=1` 資料（原 5 筆，加 Jeff 自行測試提交的一筆），上 production 前須清除或隔離。
