@@ -3,7 +3,11 @@
 ## 架構
 
 Next.js 16（App Router）→ `@opennextjs/cloudflare` → Cloudflare Workers；資料庫 Cloudflare D1（Drizzle ORM）；Email Resend；Notion 單向同步。
-`wrangler.jsonc` 定義三個環境：top-level（local）、`staging`、`production`。**env 不會繼承 binding**，每個 env 都要寫齊 `d1_databases` 與 `assets`。
+`wrangler.jsonc` 的 **top-level（預設）環境就是 staging**，另有具名的 `staging` 與 `production`。**env 不會繼承 binding**，每個 env 都要寫齊 `d1_databases` 與 `assets`。
+
+> top-level 必須是一個可實際部署的設定：任何不帶 `--env` 的 wrangler 指令都會落到這裡，而 Workers Builds 的 non-production branch 預設部署指令正是 `npx wrangler versions upload`（無 `--env`）。以前這裡放的是佔位 D1 id，令每個 PR build 都以 `D1 binding 'DB' references database '00000000-…' which was not found [code: 10181]` 失敗。
+>
+> **代價**：不帶 `--env` 的 `--remote` 指令現在會打到 staging。做遠端 D1 操作時一律要加 `--env`。本機開發（`pnpm dev`、`pnpm preview`、`pnpm db:migrate:local`、`pnpm seed:local`）行的是 Miniflare 本機儲存，不會碰到遠端資料庫。
 
 ## 帳戶與擁有權（計劃書 §9）
 
@@ -36,13 +40,7 @@ D1 `csc-questionnaire-staging` 已建立、已套用 migration 並已 seed 三�
    | Build command | `pnpm build:cf` |
    | Deploy command | `npx wrangler deploy --env staging` |
 
-3. **Settings → Build → Branch control**：`Production branch` 設為 `main`。若勾選了 **Builds for non-production branches**，必須同時把 **Non-production branch deploy command** 改成：
-
-   ```
-   npx wrangler versions upload --env staging
-   ```
-
-   預設值是 `npx wrangler versions upload`（**沒有** `--env`），會落到本檔案 top-level 的設定 —— name 是 `csc-questionnaire-local`、D1 id 是佔位值 —— 與已連結的 Worker `csc-questionnaire-staging` 不符，每個 PR 的 build 都會失敗。不需要 PR preview 的話，直接取消勾選 non-production branch builds 亦可。
+3. **Settings → Build → Branch control**：`Production branch` 設為 `main`。**Builds for non-production branches** 勾唔勾都可以 —— top-level 設定本身就是可部署的 staging，所以預設的 `npx wrangler versions upload` 亦行得通，會為每個 PR 產生 preview 版本而不影響 live deployment。
 
 4. **Settings → Variables and Secrets → Add**，Type 選 **Secret**：`RESEND_API_KEY`、`RESEND_FROM`、`NOTION_TOKEN`。未設定時 Email／Notion 會記錄為 `skipped`，不影響提交。（這些是 runtime secrets，與 Settings → Build 的 build variables 是兩回事。）
 5. 建立 Admin 帳戶：在瀏覽器 Console 產生密碼雜湊（密碼不會離開你的電腦），再於 **D1 → csc-questionnaire-staging → Console** 貼上 INSERT。見下方〈建立 Admin 帳戶〉。

@@ -1,7 +1,12 @@
 import { expect, test } from "@playwright/test";
-import { checkConsent, chooseRadio, fillText } from "./helpers";
+import { checkConsent, chooseRadio, fillText, setSetting } from "./helpers";
+
+const CSC_INFO_URL = "https://example.com/TEST-csc-info";
 
 test("community form: draft resume, submit, success CTA branch", async ({ page }) => {
+  // C06 = CSC 課程資訊 shows a secondary CTA sourced from this setting.
+  await setSetting(page, "csc_info_url", CSC_INFO_URL);
+
   await page.goto("/f/community?utm_source=ig&utm_medium=reel&cta=join_community&test=1");
   await expect(page.getByRole("heading", { name: "加入 Carey 創業資訊群前的 1 分鐘了解" })).toBeVisible();
 
