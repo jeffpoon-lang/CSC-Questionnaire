@@ -2,18 +2,22 @@
 
 ## Core Platform Staging Gate（計劃書 Gate 3）
 
+**狀態：八項全部在 staging 通過（2026-09-07）。**
+
 | # | 項目 | 本機 workerd（`pnpm preview` + Playwright／curl） | Staging（Jeff 帳戶） | 備註 |
 |---|---|---|---|---|
 | 1 | Admin 登入／登出；錯誤密碼拒絕；5 次鎖定 | ✅ `tests/e2e/admin.spec.ts` | ✅ 全部通過 | 見下方〈Staging 驗證紀錄〉 |
 | 2 | 三份表單提交 → lead + submission + tags 原子寫入 | ✅ community／generic／high-ticket e2e + D1 查證 | ✅ 三份各提交 1 份 TEST，D1 見 5 submissions／4 leads／70 tags；honeypot 提交回假 200 且**無**寫入 | `db.batch` |
 | 3 | Email 摘要（無長答） | ✅ 模板 unit 檢查（`tests/unit/engine/email-summary.test.ts`） | ✅ 已寄出並核對內容 | 見〈Gate 3 #3 驗證紀錄〉 |
 | 4 | Notion 同步 + page id | ✅ 無 token → `skipped`，log 正確 | ✅ 已建立 page 並記錄 id | 見〈Gate 3 #4／#8 驗證紀錄〉 |
-| 5 | 草稿續填（reload 還原；成功後清除） | ✅ community e2e | ⬜ 需瀏覽器操作 | localStorage，只可由真人覆核 |
+| 5 | 草稿續填（reload 還原；成功後清除） | ✅ community e2e | ✅ Jeff 用瀏覽器覆核（2026-09-07） | 兩項判斷點皆通過：中途 reload 會還原；提交成功後草稿清走 |
 | 6 | CSV 匯出 | ✅ admin e2e（download） | ✅ 全部通過 | 預設排除 TEST 資料，須 `?test=1` 才匯出 |
 | 7 | form_version／utm／landing_page／cta／consent／entry_mode／is_test | ✅ D1 查證 + invite e2e | ✅ 五筆 row 全部欄位齊；電話已正規化 E.164、電郵已轉小寫 | |
 | 8 | Notion 失敗不影響提交；修正後 Admin 重試成功 | ✅ 提交成功、狀態 skipped、重試按鈕可用 | ✅ 用錯誤 database id 完整實測 | 見〈Gate 3 #4／#8 驗證紀錄〉 |
 
 ## UAT 九項（計劃書 Gate 4）
+
+**狀態：九項中八項通過；只餘 #9 Owner 權限交接。**
 
 | # | 測試 | 狀態 | 重現步驟 | 證據 |
 |---|---|---|---|---|
@@ -25,7 +29,7 @@
 | 6 | 重覆提交標記 duplicate_of | ✅ staging | 同一電郵 30 日內提交同一表單兩次 → Admin 顯示「重覆」 | 第二筆 `duplicate_of` 有值，兩筆共用同一 `lead_id` |
 | 7 | Notion 失敗重試 | ✅ staging | 設錯 database id → 提交 → failed → 改正 → 重試 → synced | 三次 attempt 的 log 齊全 |
 | 8 | Admin 改題目並發布；舊提交仍以舊版本顯示 | ✅ 本機 | versioning e2e | |
-| 9 | Owner 權限：移除 collaborator 後仍可管理／匯出／備份 | ⬜ 交接 | docs/deploy.md 檢查清單 | |
+| 9 | Owner 權限：移除 collaborator 後仍可管理／匯出／備份 | ⬜ 交接 | docs/deploy.md 檢查清單 | 唯一未完成項；需 production 帳戶就緒後於交接時進行 |
 
 ## 已知問題
 
@@ -162,3 +166,28 @@ database id 以 `ds:<data_source_id>` 形式填入設定（`@notionhq/client` 5.
 
 ⚠️ 依計劃書 §9，production 的 Notion workspace 與 integration 必須由 Carey 或其指定帳戶持有 owner 權限，
 需另建一套 database 並重新填設定。
+
+## Gate 3 #5 覆核紀錄（草稿續填，2026-09-07）
+
+只有真人操作瀏覽器才驗得到（本容器的 Chromium 無法經 egress proxy 完成 TLS）。Jeff 在 staging 覆核：
+
+| 判斷點 | 結果 |
+|---|---|
+| 填寫途中重新載入頁面 | ✅ 已填答案自動還原 |
+| 完整提交成功後再開同一份問卷 | ✅ 草稿已清走，不會殘留上一次的答案 |
+
+草稿鍵綁定 `formVersionId`，因此表單發布新版本後舊草稿**依設計**不會還原 —— 這是刻意行為，
+避免用舊題目的答案填進新版本。
+
+---
+
+## 總結（2026-09-07）
+
+Gate 3 八項全部在 staging 通過。Gate 4 九項通過八項，只餘 #9 Owner 權限交接 —— 該項必須在
+production 資源於 Carey 帳戶建立後才做得到。
+
+技術上已具備上線條件；餘下的是內容與帳戶擁有權，不是開發工作：
+
+1. Carey／Jojo 提供四樣關鍵內容（`privacy_url`、`whatsapp_invite_url`、`csc_info_url`、`notification_recipients`）
+2. 於 Carey 帳戶建立 production 的 Cloudflare、D1、網域、Resend 寄件網域、Notion workspace 與 GitHub owner
+3. Production 重跑本文件全部檢查，清除 TEST 資料，完成 Gate 4 #9
