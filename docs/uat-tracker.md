@@ -189,5 +189,5 @@ production 資源於 Carey 帳戶建立後才做得到。
 技術上已具備上線條件；餘下的是內容與帳戶擁有權，不是開發工作：
 
 1. Carey／Jojo 提供四樣關鍵內容（`privacy_url`、`whatsapp_invite_url`、`csc_info_url`、`notification_recipients`）
-2. 於 Carey 帳戶建立 production 的 Cloudflare、D1、網域、Resend 寄件網域、Notion workspace 與 GitHub owner
+2. 於 Carey 帳戶建立 production 的 Cloudflare、D1、網域、Resend 寄件網域與 Notion workspace（原始碼 repository 留在 Jeff，只需授權 Carey 的 Cloudflare 存取）
 3. Production 重跑本文件全部檢查，清除 TEST 資料，完成 Gate 4 #9

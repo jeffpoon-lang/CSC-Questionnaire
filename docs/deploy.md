@@ -13,7 +13,7 @@ Next.js 16（App Router）→ `@opennextjs/cloudflare` → Cloudflare Workers；
 
 | 資產 | Owner |
 |---|---|
-| Git repository | Carey 或 Carey 指定帳戶（Jeff collaborator） |
+| Git repository | Jeff 持有；引擎原始碼按雙方口頭共識及 2026 年 6 月簽署的雙向保密協議處理，Carey 獲永久使用權；Carey 專屬的題目、內容、資料及 Notion mapping 全部屬 Carey，隨時可完整匯出。 |
 | Cloudflare 帳戶（Workers、D1、domain／DNS／SSL） | Carey；staging 暫時在 Jeff 帳戶 |
 | Resend（sender domain） | Carey |
 | Notion integration | Carey |

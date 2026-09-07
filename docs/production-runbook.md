@@ -2,12 +2,14 @@
 
 上線當日照住行。設計目標是：**同 Carey 開一次 session 就做得完**，不需要臨場查資料。
 
-> **擁有權（計劃書 §9）**
-> Cloudflare 帳戶、D1、網域／DNS／SSL、Resend 寄件網域、Notion workspace、GitHub repository
-> —— 全部由 **Carey 或 Carey 指定的帳戶持有 owner 權限**；Jeff 只取最小所需的 collaborator 權限。
+> **擁有權**
 >
-> 不要為了「先行起來」而用 Jeff 的帳戶開 production 資源。這樣做出來的東西之後全部要拆一次，
-> 而且中間任何一刻 Carey 都不是真正的擁有者。
+> **營運資產** —— Cloudflare 帳戶、D1、網域／DNS／SSL、Resend 寄件網域、Notion workspace ——
+> 全部由 **Carey 或 Carey 指定的帳戶持有 owner 權限**；Jeff 只取最小所需的 collaborator 權限。
+> 不要為了「先行起來」而用 Jeff 的帳戶開這些資源：之後全部要拆一次，而且中間任何一刻 Carey 都不是真正的擁有者。
+>
+> **原始碼** —— 引擎原始碼按雙方口頭共識及 2026 年 6 月簽署的雙向保密協議處理，Carey 獲永久使用權；Carey 專屬的題目、內容、資料及 Notion mapping 全部屬 Carey，隨時可完整匯出。
+> （此項依雙方口頭共識，與計劃書 v2.0 §9 的字面寫法不同，以口頭共識為準。）
 
 ---
 
@@ -23,7 +25,7 @@ Carey／Jojo 需要準備好這五樣，缺一樣就上不了：
 | 4 | 新提交通知的收件人電郵（可多於一個） | 每次新提交的摘要 email |
 | 5 | 正式網域（例如 `forms.<carey-domain>`）及其 DNS 管理權 | 問卷與 Admin 的公開網址 |
 
-另外需要一位人員在場，能夠在 Carey 的帳戶登入：Cloudflare、Resend、Notion、GitHub。
+另外需要一位人員在場，能夠在 Carey 的帳戶登入：Cloudflare、Resend、Notion。
 
 ---
 
@@ -64,17 +66,21 @@ Carey／Jojo 需要準備好這五樣，缺一樣就上不了：
 
 ## 四、GitHub
 
-把 repository 轉移到 Carey 或其指定帳戶／組織，Jeff 改為 collaborator。
-Cloudflare 的 Git 連結會沿用同一個 repository，轉移後確認 Workers Builds 仍然接得上。
+Repository 留在 Jeff 帳戶 —— 引擎原始碼按雙方口頭共識及 2026 年 6 月簽署的雙向保密協議處理，Carey 獲永久使用權；Carey 專屬的題目、內容、資料及 Notion mapping 全部屬 Carey，隨時可完整匯出。
+
+需要做的只有一件事：在 repository 的 **Settings → GitHub Apps**，授權 Carey 帳戶的 Cloudflare
+Workers & Pages app 存取此 repository，否則 Carey 的 Cloudflare 匯入不到、Workers Builds 建不了。
 
 ---
 
 ## 五、填設定並部署
 
 1. 在 `wrangler.jsonc` 的 `env.production` 填入真實值，取代這些佔位符：
-   - `vars.APP_ORIGIN` → `https://<正式網域>`
-   - `routes[0].pattern` → `<正式網域>`
    - `d1_databases[0].database_id` → 第一步記下的 D1 ID
+   - `vars.APP_ORIGIN` → 正式網址（未有網域前先填 workers.dev 的網址）
+
+   custom domain **不要**寫進設定檔：在 Worker 的 Settings → Domains & Routes 加即可，
+   不需要改 code 也不需要重新部署。設定檔裡寫一個帳戶還未擁有的網域，只會令每次部署失敗。
 
 2. **Settings → Variables and Secrets → Add**，Type 選 **Secret**（不是 Text，也不是
    Settings → Build 的 build variables —— 那些 runtime 讀不到）：
@@ -139,6 +145,7 @@ Cloudflare 的 Git 連結會沿用同一個 repository，轉移後確認 Workers
 - [ ] 在 Notion 見到同步過來的紀錄
 - [ ] 收得到新提交的摘要 email
 - [ ] 在 Cloudflare 匯出一次 D1 備份
+- [ ] 從 Admin 匯出一次完整 CSV，確認 Carey 專屬的題目、內容與資料可以隨時完整取回
 
 全部通過即完成交接。結果記入 `docs/uat-tracker.md`。
 
