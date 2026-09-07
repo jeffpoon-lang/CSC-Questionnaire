@@ -47,18 +47,27 @@
         }
       ]
     },
+    // Production lives in Carey's Cloudflare account (plan section 9).
+    //
+    // The custom domain is deliberately NOT declared here. Adding it from the
+    // dashboard (the Worker's Settings -> Domains & Routes) needs no code
+    // change, while a `routes` entry naming a domain the account does not own
+    // yet fails every deploy until it does. workers_dev gives a working URL in
+    // the meantime.
+    //
+    // APP_ORIGIN stays a placeholder until the real hostname exists; the app
+    // derives its origin from the request, so this is only a fallback — but
+    // /admin/preflight flags the placeholder as a blocker, which is the
+    // reminder to set it once the domain is live.
     "production": {
       "name": "csc-questionnaire",
-      "workers_dev": false,
+      "workers_dev": true,
       "assets": { "directory": ".open-next/assets", "binding": "ASSETS" },
       "observability": { "enabled": true },
       "vars": {
         "APP_ENV": "production",
-        "APP_ORIGIN": "https://forms.REPLACE_WITH_CAREY_DOMAIN"
+        "APP_ORIGIN": "https://REPLACE_WITH_PRODUCTION_HOSTNAME"
       },
-      "routes": [
-        { "pattern": "forms.REPLACE_WITH_CAREY_DOMAIN", "custom_domain": true }
-      ],
       "d1_databases": [
         {
           "binding": "DB",
