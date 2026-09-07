@@ -7,11 +7,11 @@
 | 1 | Admin 登入／登出；錯誤密碼拒絕；5 次鎖定 | ✅ `tests/e2e/admin.spec.ts` | ✅ 全部通過 | 見下方〈Staging 驗證紀錄〉 |
 | 2 | 三份表單提交 → lead + submission + tags 原子寫入 | ✅ community／generic／high-ticket e2e + D1 查證 | ✅ 三份各提交 1 份 TEST，D1 見 5 submissions／4 leads／70 tags；honeypot 提交回假 200 且**無**寫入 | `db.batch` |
 | 3 | Email 摘要（無長答） | ✅ 模板 unit 檢查（`tests/unit/engine/email-summary.test.ts`） | ✅ 已寄出並核對內容 | 見〈Gate 3 #3 驗證紀錄〉 |
-| 4 | Notion 同步 + page id | ✅ 無 token → `skipped`，log 正確 | ⚠️ `notion_sync_status=skipped`（`NOTION_TOKEN not set`），符合預期 | 待設 NOTION_TOKEN + database 後重驗 |
+| 4 | Notion 同步 + page id | ✅ 無 token → `skipped`，log 正確 | ✅ 已建立 page 並記錄 id | 見〈Gate 3 #4／#8 驗證紀錄〉 |
 | 5 | 草稿續填（reload 還原；成功後清除） | ✅ community e2e | ⬜ 需瀏覽器操作 | localStorage，只可由真人覆核 |
 | 6 | CSV 匯出 | ✅ admin e2e（download） | ✅ 全部通過 | 預設排除 TEST 資料，須 `?test=1` 才匯出 |
 | 7 | form_version／utm／landing_page／cta／consent／entry_mode／is_test | ✅ D1 查證 + invite e2e | ✅ 五筆 row 全部欄位齊；電話已正規化 E.164、電郵已轉小寫 | |
-| 8 | Notion 失敗不影響提交；修正後 Admin 重試成功 | ✅ 提交成功、狀態 skipped、重試按鈕可用 | ⚠️ 提交成功、狀態 skipped、log 有原因 | 設好 token 後用錯誤 database id 實測 |
+| 8 | Notion 失敗不影響提交；修正後 Admin 重試成功 | ✅ 提交成功、狀態 skipped、重試按鈕可用 | ✅ 用錯誤 database id 完整實測 | 見〈Gate 3 #4／#8 驗證紀錄〉 |
 
 ## UAT 九項（計劃書 Gate 4）
 
@@ -23,7 +23,7 @@
 | 4 | Tailored Module 只在邀請連結出現、版本記錄 | ✅ 本機 | `tests/e2e/versioning-invites.spec.ts` | |
 | 5 | Consent：application 必填、marketing 預設否 | ✅ unit + e2e | `tests/unit/engine/zod.test.ts` | |
 | 6 | 重覆提交標記 duplicate_of | ✅ staging | 同一電郵 30 日內提交同一表單兩次 → Admin 顯示「重覆」 | 第二筆 `duplicate_of` 有值，兩筆共用同一 `lead_id` |
-| 7 | Notion 失敗重試 | ⬜ staging | 設錯 database id → 提交 → failed → 改正 → 重試 → synced | |
+| 7 | Notion 失敗重試 | ✅ staging | 設錯 database id → 提交 → failed → 改正 → 重試 → synced | 三次 attempt 的 log 齊全 |
 | 8 | Admin 改題目並發布；舊提交仍以舊版本顯示 | ✅ 本機 | versioning e2e | |
 | 9 | Owner 權限：移除 collaborator 後仍可管理／匯出／備份 | ⬜ 交接 | docs/deploy.md 檢查清單 | |
 
@@ -123,3 +123,42 @@ Admin 設定頁填回。
 **同時修正**：email 模板的 `labelFor` 沒有處理 `optionsFrom`，令 G09 印出原始值 `team_delegation`
 而非「招聘、培訓、留人或授權」。Notion mapper 與 Admin 詳情頁本來已正確處理，只有 email 漏了。
 已修正並補上會重現該 bug 的單元測試。
+
+## Gate 3 #4／#8 與 Gate 4 #7 驗證紀錄（Notion，2026-09-07）
+
+三個 Notion database 已在 staging workspace 建立，property 名稱與類型依 `docs/notion-mapping.md`；
+database id 以 `ds:<data_source_id>` 形式填入設定（`@notionhq/client` 5.x 走新版 API，data source 形式較穩妥）。
+
+| 檢查 | 結果 |
+|---|---|
+| 同步建立 page | ✅ 九筆 TEST 提交全部 `synced`，各自記錄 `notion_page_id` |
+| Generic CSC 欄位 | ✅ 姓名／WhatsApp／電郵／行業／創業階段／團隊規模／三個痛點／首要問題／90 日目標／意向支援／認識渠道 + 共同欄位 |
+| High-ticket 欄位 | ✅ 24 個對應欄位齊全，`準備度` 為 Number，`入口` 為「公開」 |
+| Community 欄位 | ✅ 稱呼／行業／階段／最想突破／90 日改變／內容意向／推廣同意 + 共同欄位 |
+| 長答 | ✅ Notion page body 一律空白；High-ticket 的 Q14／Q15／Q17／Q18／Q19／Q27 完全沒有同步 |
+| Generic CSC 的 G11 | ✅ 依計劃書 §6 **刻意**同步為「90 日目標」；G10／G12／G13／G16 沒有同步 |
+| 動態選項標籤 | ✅ G09（`optionsFrom`）在 Notion 顯示中文標籤而非原始值 |
+| Select 值含逗號 | ✅ `cleanSelect` 將半形逗號轉為全形（Notion select 不接受逗號），例如「USD 13，001–40，000」 |
+
+### 失敗與重試（#8 / Gate 4 #7）
+
+刻意把 `notion_db_community` 設為不存在的 id 後提交：
+
+| 階段 | 結果 |
+|---|---|
+| 提交 | ✅ HTTP 200，成功頁正常，row 正常寫入 D1 |
+| `notion_sync_status` | ✅ `failed`（不會假裝成功） |
+| attempt 0 | `pending`，`triggered_by=submit`（提交時同批寫入） |
+| attempt 1 | `failed`，`triggered_by=auto`，錯誤原文完整保留 |
+| 改正 id 後按 Admin「重試未同步」 | ✅ attempt 2 `success`，`triggered_by=admin:<操作者電郵>` |
+| 結果 | ✅ `synced` 並取得 `notion_page_id` |
+
+### 狀態推送（update 而非新增）
+
+在 Admin 把該筆改為「已聯絡」後，Notion 上**同一個 page**（page id 不變）的「跟進狀態」更新為
+「已聯絡」，沒有產生第二個 page —— 同步是 idempotent 的。
+
+本輪使用臨時 `admin_notion_test` 帳戶驅動 Admin 動作，驗證後連同 session 一併刪除；owner 帳戶未受影響。
+
+⚠️ 依計劃書 §9，production 的 Notion workspace 與 integration 必須由 Carey 或其指定帳戶持有 owner 權限，
+需另建一套 database 並重新填設定。
