@@ -4,7 +4,8 @@ Carey Cheung／Acaredemy《眉煩惱得億的黃金三角創業系統》Sales Fu
 
 - 技術：Next.js 16 · @opennextjs/cloudflare · Cloudflare Workers + D1 · Drizzle · zod · Resend · Notion API
 - 部署：Cloudflare Dashboard 的 Workers Builds（Git 整合，免 CLI）或本機 `pnpm deploy:staging`；兩者步驟見 [部署與環境](docs/deploy.md)
-- 文件：[部署與環境](docs/deploy.md) · [Admin 手冊](docs/admin-handbook.md) · [Data Dictionary](docs/data-dictionary.md) · [Notion Mapping](docs/notion-mapping.md) · [UAT Tracker](docs/uat-tracker.md)
+- 文件：[部署與環境](docs/deploy.md) · [Production Runbook](docs/production-runbook.md) · [Admin 手冊](docs/admin-handbook.md) · [Data Dictionary](docs/data-dictionary.md) · [Notion Mapping](docs/notion-mapping.md) · [UAT Tracker](docs/uat-tracker.md)
+- 上線：交接當日照住 [Production Runbook](docs/production-runbook.md) 行；Admin 的 `/admin/preflight` 會列出仍未通過的項目
 
 ## 路徑
 

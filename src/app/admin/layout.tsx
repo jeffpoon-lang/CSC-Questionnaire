@@ -22,6 +22,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             <NavLink href="/admin/invites">邀請連結</NavLink>
             <NavLink href="/admin/notion">Notion</NavLink>
             <NavLink href="/admin/settings">設定</NavLink>
+            <NavLink href="/admin/preflight">上線檢查</NavLink>
           </nav>
           <form action={logoutAction} className="ml-auto flex items-center gap-3 text-sm text-stone-600">
             <span>{user.displayName}（{user.role}）</span>

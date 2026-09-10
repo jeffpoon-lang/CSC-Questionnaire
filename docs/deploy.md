@@ -13,7 +13,7 @@ Next.js 16（App Router）→ `@opennextjs/cloudflare` → Cloudflare Workers；
 
 | 資產 | Owner |
 |---|---|
-| Git repository | Carey 或 Carey 指定帳戶（Jeff collaborator） |
+| Git repository | Jeff 持有；引擎原始碼按雙方口頭共識及 2026 年 6 月簽署的雙向保密協議處理，Carey 獲永久使用權；Carey 專屬的題目、內容、資料及 Notion mapping 全部屬 Carey，隨時可完整匯出。 |
 | Cloudflare 帳戶（Workers、D1、domain／DNS／SSL） | Carey；staging 暫時在 Jeff 帳戶 |
 | Resend（sender domain） | Carey |
 | Notion integration | Carey |
@@ -88,6 +88,8 @@ ON CONFLICT(email) DO UPDATE SET password_hash = excluded.password_hash, failed_
 系統目前沒有「更改密碼」介面；要換密碼就重新執行同一段 SQL（`ON CONFLICT` 會覆蓋雜湊）。
 
 ## Production（Carey 帳戶）
+
+> 上線當日的完整逐步流程見 **[Production Runbook](production-runbook.md)**；本節只列環境設定本身。
 
 1. 在 Carey 帳戶 `wrangler d1 create csc-questionnaire-production`，把 id 填入 `env.production.d1_databases`。
 2. 設定 custom domain（`env.production.routes`）與 `APP_ORIGIN`。Workers Builds 亦可用同樣方式連接，Worker 名須為 `csc-questionnaire`、deploy command 為 `npx wrangler deploy --env production`。
