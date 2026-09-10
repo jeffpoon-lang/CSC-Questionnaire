@@ -72,7 +72,7 @@
         {
           "binding": "DB",
           "database_name": "csc-questionnaire-production",
-          "database_id": "REPLACE_WITH_PRODUCTION_D1_ID",
+          "database_id": "8334f733-841a-4d78-b84a-2d6975684e11",
           "migrations_dir": "drizzle"
         }
       ]
