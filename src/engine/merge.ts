@@ -19,6 +19,10 @@ export function mergeQuestions(def: FormDefinition, modules: ModuleDefinition[])
   if (splitAt === -1) splitAt = core.length;
   const head = core.slice(0, splitAt);
   const tail = core.slice(splitAt);
-  const moduleQs = modules.flatMap((m) => m.questions);
+  // The renderer pages by section, so a module's questions carry the module
+  // title as their section instead of inheriting the core form's last one.
+  const moduleQs = modules.flatMap((m) =>
+    m.questions.map((q) => (q.section ? q : { ...q, section: m.title })),
+  );
   return [...head, ...moduleQs, ...tail];
 }

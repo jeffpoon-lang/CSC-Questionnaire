@@ -11,15 +11,61 @@ export async function adminLogin(page: Page) {
   await expect(page).toHaveURL(/\/admin(\?|$)/);
 }
 
+/** Primary button on every step before the review step. */
+const NAV_NEXT = /^(開始填寫|下一步|檢視答案|返回檢視)$/;
+
+/** Step transitions are animated; give the next page time to mount. */
+const STEP_MS = 250;
+
+export async function nextPage(page: Page) {
+  await page.getByRole("button", { name: NAV_NEXT }).click();
+  await page.waitForTimeout(STEP_MS);
+}
+
+export async function prevPage(page: Page) {
+  await page.getByRole("button", { name: "上一步", exact: true }).click();
+  await page.waitForTimeout(STEP_MS);
+}
+
+/**
+ * The form renders a few questions per page, so a question is only in the DOM
+ * once its page is open. Walk forward until it is (each step validates, so the
+ * questions before it must already be answered).
+ */
+export async function openQuestion(page: Page, questionId: string) {
+  const q = page.locator(`[data-question="${questionId}"]`);
+  for (let i = 0; i < 40; i++) {
+    if ((await q.count()) > 0) return;
+    const next = page.getByRole("button", { name: NAV_NEXT });
+    if ((await next.count()) === 0) break;
+    await next.click();
+    await page.waitForTimeout(STEP_MS);
+  }
+  await expect(q, `could not reach ${questionId}`).toBeVisible();
+}
+
+/** Walk to the review step and submit. */
+export async function submitForm(page: Page, submitLabel: string) {
+  const submit = page.getByRole("button", { name: submitLabel, exact: true });
+  for (let i = 0; i < 40 && (await submit.count()) === 0; i++) {
+    await page.getByRole("button", { name: NAV_NEXT }).click();
+    await page.waitForTimeout(STEP_MS);
+  }
+  await submit.click();
+}
+
 export async function chooseRadio(page: Page, questionId: string, label: string) {
+  await openQuestion(page, questionId);
   await page.locator(`[data-question="${questionId}"]`).getByLabel(label, { exact: true }).check();
 }
 
 export async function fillText(page: Page, questionId: string, value: string) {
+  await openQuestion(page, questionId);
   await page.locator(`[data-question="${questionId}"] input, [data-question="${questionId}"] textarea`).first().fill(value);
 }
 
 export async function checkConsent(page: Page, questionId: string, key: string) {
+  await openQuestion(page, questionId);
   await page.locator(`[data-question="${questionId}"] input[name="${questionId}.${key}"]`).check();
 }
 

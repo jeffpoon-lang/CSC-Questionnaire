@@ -37,6 +37,7 @@ src/forms/canonical/ 三份問卷的正式定義（G01–G20、Q01–Q34、C01�
 src/db/              Drizzle schema、D1 client、查詢
 src/server/          提交 pipeline、auth、email、notion、settings、csv
 src/app/f/           公開問卷與成功頁
+src/components/form/ 問卷 renderer：逐頁分頁（pagination.ts）、頁間動畫、進度、檢視答案頁
 src/app/admin/       後台
 scripts/             seed SQL、admin seed、data dictionary 生成
 drizzle/             migrations 與 seed SQL

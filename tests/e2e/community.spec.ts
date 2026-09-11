@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { checkConsent, chooseRadio, fillText, setSetting } from "./helpers";
+import { checkConsent, chooseRadio, fillText, nextPage, openQuestion, setSetting, submitForm } from "./helpers";
 
 const CSC_INFO_URL = "https://example.com/TEST-csc-info";
 
@@ -20,16 +20,18 @@ test("community form: draft resume, submit, success CTA branch", async ({ page }
   await page.reload();
   await expect(page.getByText("已還原你上次未完成的答案")).toBeVisible();
   await expect(page.locator('[data-question="C01"] input')).toHaveValue(name);
+  await expect(page.locator('[data-question="C03"]').getByLabel("已營運但遇到瓶頸", { exact: true })).toBeChecked();
 
-  // validation gating
-  await page.getByRole("button", { name: "取得加入連結" }).click();
+  // validation gating: the page holding C04 will not advance while it is empty
+  await openQuestion(page, "C04");
+  await nextPage(page);
   await expect(page.locator('[data-question="C04"]').getByRole("alert")).toHaveText("此題為必填");
 
   await chooseRadio(page, "C04", "客源與成交");
   await fillText(page, "C05", "穩定查詢");
   await chooseRadio(page, "C06", "CSC 課程資訊");
   await checkConsent(page, "C07", "application");
-  await page.getByRole("button", { name: "取得加入連結" }).click();
+  await submitForm(page, "取得加入連結");
 
   await expect(page).toHaveURL(/\/f\/community\/success\//);
   await expect(page.getByRole("heading", { name: /多謝你/ })).toBeVisible();

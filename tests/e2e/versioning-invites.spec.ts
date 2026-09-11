@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { adminLogin, checkConsent, chooseRadio, fillText } from "./helpers";
+import { adminLogin, checkConsent, chooseRadio, fillText, openQuestion, submitForm } from "./helpers";
 
 test("form versioning: draft, publish, immutability rule, disable/enable", async ({ page }) => {
   await adminLogin(page);
@@ -35,6 +35,7 @@ test("form versioning: draft, publish, immutability rule, disable/enable", async
   await expect(page.getByText(/已發布 v\d+/)).toBeVisible();
 
   await page.goto("/f/community");
+  await openQuestion(page, "C01");
   await expect(page.getByText(`你希望我們怎樣稱呼你？（${stamp}）`)).toBeVisible();
 
   // disable / enable
@@ -87,7 +88,7 @@ test("tailored module + invite link: hidden on public URL, present via invite, r
   // invite URL: module present + prefill
   await page.goto(url.replace(/^https?:\/\/[^/]+/, ""));
   await expect(page.getByText("專屬邀請版本")).toBeVisible();
-  await expect(page.locator(`[data-question="M_${slug}_01"]`)).toBeVisible();
+  await openQuestion(page, "Q01");
   await expect(page.locator('[data-question="Q01"] input')).toHaveValue("TEST Invitee");
 
   await fillText(page, "Q02", "TEST Brand");
@@ -101,12 +102,15 @@ test("tailored module + invite link: hidden on public URL, present via invite, r
   await chooseRadio(page, "Q10", "我本人");
   await chooseRadio(page, "Q11", "團隊或營運混亂");
   await chooseRadio(page, "Q12", "不方便透露");
+  await openQuestion(page, "Q13");
   await page.locator('[data-question="Q13"]').getByLabel("主管責任", { exact: true }).check();
-  for (const [q, t] of [["Q14", "a"], ["Q15", "b"], ["Q17", "c"], ["Q18", "d"], ["Q19", "e"]]) await fillText(page, q, t);
+  for (const [q, t] of [["Q14", "a"], ["Q15", "b"]]) await fillText(page, q, t);
   await chooseRadio(page, "Q16", "21–30 小時");
+  for (const [q, t] of [["Q17", "c"], ["Q18", "d"], ["Q19", "e"]]) await fillText(page, q, t);
   await chooseRadio(page, "Q20", "我可以決定");
   await chooseRadio(page, "Q21", "已確定的主管或項目負責人");
   await chooseRadio(page, "Q22", "6–10 小時");
+  await openQuestion(page, "Q23");
   await page.locator('[data-question="Q23"]').getByRole("button", { name: "9", exact: true }).click();
   await chooseRadio(page, "Q24", "長期私人顧問");
   await chooseRadio(page, "Q25", "USD 13,001–40,000");
@@ -114,10 +118,12 @@ test("tailored module + invite link: hidden on public URL, present via invite, r
   await fillText(page, "Q28", `invitee-${Date.now()}@example.com`);
   await fillText(page, "Q29", "+852 6123 4567");
   await chooseRadio(page, "Q31", "現有課程或服務客戶");
+  await openQuestion(page, `M_${slug}_01`);
+  await expect(page.locator(`[data-question="M_${slug}_01"]`)).toBeVisible();
   await chooseRadio(page, `M_${slug}_01`, "選項 B");
   await checkConsent(page, "Q32", "application");
   await checkConsent(page, "Q33", "outcome_ack");
-  await page.getByRole("button", { name: "提交申請" }).click();
+  await submitForm(page, "提交申請");
   await expect(page).toHaveURL(/\/f\/high_ticket\/success\//);
 
   // second use should be blocked (max_uses = 1)
