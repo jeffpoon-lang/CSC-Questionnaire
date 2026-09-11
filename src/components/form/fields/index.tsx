@@ -20,7 +20,6 @@ export function FieldShell({ q, error, children, piiHintText }: { q: Question; e
   const showPii = q.type === "long_text" && q.piiHint;
   return (
     <div className="py-5" data-question={q.id}>
-      {q.section && <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-[var(--accent)]">{q.section}</p>}
       <label htmlFor={q.id} className="block text-base font-medium leading-snug text-stone-900">
         {q.label}
         {q.required && <span className="ml-1 text-red-600" aria-hidden>*</span>}

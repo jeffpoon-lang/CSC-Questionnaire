@@ -4,3 +4,40 @@
   --brand: #1f1a17;
   --accent: #b08d57;
 }
+
+/* Step transitions for the paged form renderer.
+   The outgoing page fades out as a block; the incoming page's questions
+   stagger in, so a page of 2–3 questions reads one at a time. */
+@keyframes step-in-fwd {
+  from { opacity: 0; transform: translate3d(26px, 0, 0); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes step-in-back {
+  from { opacity: 0; transform: translate3d(-26px, 0, 0); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes step-out-fwd {
+  from { opacity: 1; transform: none; }
+  to { opacity: 0; transform: translate3d(-26px, 0, 0); }
+}
+@keyframes step-out-back {
+  from { opacity: 1; transform: none; }
+  to { opacity: 0; transform: translate3d(26px, 0, 0); }
+}
+
+.step-enter-fwd > * { animation: step-in-fwd 420ms cubic-bezier(0.22, 0.78, 0.35, 1) both; }
+.step-enter-back > * { animation: step-in-back 420ms cubic-bezier(0.22, 0.78, 0.35, 1) both; }
+.step-enter-fwd > *,
+.step-enter-back > * { animation-delay: calc(var(--step-i, 0) * 65ms); }
+.step-exit-fwd { animation: step-out-fwd 180ms cubic-bezier(0.22, 0.78, 0.35, 1) both; }
+.step-exit-back { animation: step-out-back 180ms cubic-bezier(0.22, 0.78, 0.35, 1) both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .step-enter-fwd > *,
+  .step-enter-back > *,
+  .step-exit-fwd,
+  .step-exit-back {
+    animation-duration: 1ms;
+    animation-delay: 0ms;
+  }
+}
