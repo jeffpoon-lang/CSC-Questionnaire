@@ -1,0 +1,694 @@
+{
+  "statementVersion": "2026-09",
+  "target": {
+    "env": "production",
+    "baseUrl": "https://csc-questionnaire.cs-570.workers.dev",
+    "formVersions": {
+      "community": "form_community_v1",
+      "generic_csc": "form_generic_csc_v1",
+      "high_ticket": "form_high_ticket_v1"
+    }
+  },
+  "sections": [
+    {
+      "key": "0",
+      "title": "開場前要齊嘅嘢",
+      "actor": "both",
+      "signGroup": null,
+      "note": "唔係測試，係入場券。缺一樣，Carey 就會試到一個扮演緊完整系統嘅半成品。Resend 最早開始 —— 改完 DNS 要等驗證。"
+    },
+    {
+      "key": "A",
+      "title": "內容驗收：Carey 當客人填",
+      "actor": "carey",
+      "signGroup": "A",
+      "note": "成個 UAT 最有價值嘅部分。Carey 係唯一判斷得到題目文字、語氣同選項啱唔啱嘅人。用真實答案填，唔好打「test test」。"
+    },
+    {
+      "key": "B",
+      "title": "Admin 日常操作：Carey 自己撳",
+      "actor": "carey",
+      "signGroup": "B+C",
+      "note": "Jeff 唔好代佢撳。佢撳唔到、搵唔到，就係真問題。"
+    },
+    {
+      "key": "C",
+      "title": "系統行為：Jeff 示範，Carey 見證",
+      "actor": "jeff",
+      "signGroup": "B+C",
+      "note": "Carey 判斷唔到啱唔啱，但佢要知道有呢啲保護。佢簽嘅係「我見過、我明白」。"
+    },
+    {
+      "key": "D",
+      "title": "交接驗證（Gate 4 #9）",
+      "actor": "carey",
+      "signGroup": "D",
+      "note": "移除或降低 Jeff 權限之後，由 Carey 一方獨立完成。呢節唔准有任何 accepted exception —— 係交接嘅唯一證明。"
+    },
+    {
+      "key": "E",
+      "title": "清場收尾",
+      "actor": "jeff",
+      "signGroup": "final",
+      "note": "UAT 之後 production 會有一堆 TEST 資料，唔清走就會流入營運輸出。"
+    }
+  ],
+  "items": [
+    {
+      "id": "p1",
+      "sectionKey": "0",
+      "kind": "prereq",
+      "title": "私隱聲明全文或一條可公開連結",
+      "actor": "carey",
+      "action": ["Carey 交俾 Jeff", "填入 Admin → 設定 `privacy_url`"],
+      "expect": ["三份問卷底部嘅「私隱聲明」撳得入去", "`/privacy` 唔再係待補頁"],
+      "deps": [],
+      "weight": "blocker"
+    },
+    {
+      "id": "p2",
+      "sectionKey": "0",
+      "kind": "prereq",
+      "title": "WhatsApp Community 邀請連結",
+      "actor": "carey",
+      "action": ["填入 `whatsapp_invite_url`"],
+      "expect": [
+        "Community 同 Generic 成功頁嘅主要按鈕出得返",
+        "未填嘅話個按鈕完全唔會出現（唔係出咗個爛 link）—— 呢個係刻意設計"
+      ],
+      "deps": [],
+      "weight": "blocker"
+    },
+    {
+      "id": "p3",
+      "sectionKey": "0",
+      "kind": "prereq",
+      "title": "CSC 課程資訊頁網址",
+      "actor": "carey",
+      "action": ["填入 `csc_info_url`"],
+      "expect": ["C06 或 G17 揀「CSC 課程」嗰陣，成功頁多一個次要按鈕"],
+      "deps": [],
+      "weight": "major"
+    },
+    {
+      "id": "p4",
+      "sectionKey": "0",
+      "kind": "prereq",
+      "title": "新提交通知嘅收件人電郵",
+      "actor": "carey",
+      "action": ["填入 `notification_recipients`，每行一個"],
+      "expect": ["每次新提交，名單上每個人收到一封摘要"],
+      "deps": ["resend"],
+      "weight": "major"
+    },
+    {
+      "id": "p5",
+      "sectionKey": "0",
+      "kind": "prereq",
+      "title": "Resend：已驗證寄件網域 + API key",
+      "actor": "carey",
+      "action": [
+        "Carey 帳戶加寄件網域",
+        "按指示加 SPF／DKIM DNS 記錄，等驗證通過",
+        "出一條 Sending access 權限嘅 key",
+        "Jeff 設定 Worker secret `RESEND_API_KEY` 同 `RESEND_FROM`"
+      ],
+      "expect": [
+        "一定要用已驗證網域。用共用測試寄件地址時，Resend 淨係寄得到帳戶持有人自己個電郵，團隊其他收件人一封都收唔到 —— staging 實測確認過，官方文件冇寫"
+      ],
+      "deps": ["resend"],
+      "weight": "major"
+    },
+    {
+      "id": "p6",
+      "sectionKey": "0",
+      "kind": "prereq",
+      "title": "Notion integration token + 三個 database 逐個加 Connection",
+      "actor": "carey",
+      "action": [
+        "notion.so/profile/integrations 開 internal integration，勾 Read／Insert／Update content",
+        "逐個 database 右上 `⋯` → Connections → 加入該 integration",
+        "Jeff 設定 `NOTION_TOKEN` secret 同三個 `notion_db_*` 設定"
+      ],
+      "expect": [
+        "三個 database 已經喺 Carey workspace 起好，property 跟足 docs/notion-mapping.md",
+        "母頁授權唔一定傳落子 database，一定要逐個加"
+      ],
+      "deps": ["notion"],
+      "weight": "major"
+    },
+    {
+      "id": "p7",
+      "sectionKey": "0",
+      "kind": "prereq",
+      "title": "Carey 自己嘅 Admin owner 帳戶",
+      "actor": "both",
+      "action": [
+        "Jeff 開一個 role 係 `owner` 嘅帳戶",
+        "密碼由 Carey 自己撳，Jeff 唔應該知",
+        "交接時停用或刪走 `admin_jeff`"
+      ],
+      "expect": [
+        "Carey 登入到 `/admin`",
+        "而家 production 只有 `admin_jeff`，而且 role 係 `admin` 唔係 `owner` —— 交接前一定要換"
+      ],
+      "deps": ["admin_account"],
+      "weight": "blocker"
+    },
+    {
+      "id": "p8",
+      "sectionKey": "0",
+      "kind": "prereq",
+      "title": "admin_base_url 填正式網址",
+      "actor": "jeff",
+      "action": ["Admin → 設定 → `admin_base_url`"],
+      "expect": ["摘要 email 入面嗰條「去 Admin 睇」連結撳得入正確網址"],
+      "deps": [],
+      "weight": "minor"
+    },
+
+    {
+      "id": "a1",
+      "sectionKey": "A",
+      "kind": "test",
+      "title": "Community 問卷行足全程",
+      "actor": "carey",
+      "chips": ["3 頁"],
+      "action": ["開 `/f/community`", "用真實答案填晒 C01–C07", "C06 揀「CSC 課程資訊」"],
+      "expect": [
+        "每頁得 1–3 題，撳「下一步」先去下一頁",
+        "頂部見到而家喺邊個部分、第幾／共幾頁、進度條",
+        "成功頁：主按鈕「立即加入 WhatsApp Community」＋次按鈕「了解 CSC 課程資訊」"
+      ],
+      "deps": [],
+      "weight": "blocker"
+    },
+    {
+      "id": "a2",
+      "sectionKey": "A",
+      "kind": "test",
+      "title": "Community 分岔：內容意向揀顧問",
+      "actor": "carey",
+      "chips": ["分岔"],
+      "action": ["再填一次，C06 改揀「1:1 策略診斷或顧問資訊」"],
+      "expect": ["次要按鈕變成「日後可完成創辦人增長與團隊診斷申請」，指去 `/f/high_ticket`"],
+      "deps": [],
+      "weight": "major"
+    },
+    {
+      "id": "a3",
+      "sectionKey": "A",
+      "kind": "test",
+      "title": "Generic CSC：三個痛點嘅上限",
+      "actor": "carey",
+      "chips": ["8 頁"],
+      "action": ["開 `/f/generic_csc`，行到 G08", "試下揀第 4 項"],
+      "expect": ["最多揀到 3 項，第 4 項揀唔到"],
+      "deps": [],
+      "weight": "major"
+    },
+    {
+      "id": "a4",
+      "sectionKey": "A",
+      "kind": "test",
+      "title": "Generic CSC：G09 嘅選項跟住 G08 變",
+      "actor": "carey",
+      "chips": ["動態題"],
+      "action": ["睇下一頁 G09「若 Carey 只能先協助你釐清一件事」"],
+      "expect": ["G09 淨係列出你喺 G08 揀過嗰幾項，唔會出現冇揀過嘅嘢"],
+      "deps": [],
+      "weight": "major"
+    },
+    {
+      "id": "a5",
+      "sectionKey": "A",
+      "kind": "test",
+      "title": "Generic CSC：意向支援分兩條路",
+      "actor": "carey",
+      "chips": ["分岔"],
+      "action": ["填一次 G17 揀「完整 CSC 課程」", "再填多次 G17 揀「策略診斷」"],
+      "expect": [
+        "揀「完整 CSC 課程」→ 成功頁多個「了解 CSC 課程資訊」按鈕",
+        "揀「策略診斷」→ 冇課程按鈕，改為顯示一句「團隊將先閱讀你的資料，再聯絡合適的下一步。」"
+      ],
+      "deps": [],
+      "weight": "major"
+    },
+    {
+      "id": "a6",
+      "sectionKey": "A",
+      "kind": "test",
+      "title": "High-ticket：Q24 揀「合作構想」會多一題",
+      "actor": "carey",
+      "chips": ["16 頁", "條件題"],
+      "action": ["開 `/f/high_ticket`", "Q24 揀「合作構想」"],
+      "expect": [
+        "之後出現 Q27 長答，要求講受眾、概念、雙方角色、預期投入、雙方價值",
+        "揀其他選項嘅話呢題唔會出現"
+      ],
+      "deps": [],
+      "weight": "major"
+    },
+    {
+      "id": "a7",
+      "sectionKey": "A",
+      "kind": "test",
+      "title": "High-ticket 成功頁冇任何承諾",
+      "actor": "carey",
+      "chips": ["合規"],
+      "action": ["提交完睇成功頁"],
+      "expect": [
+        "只有「多謝你的申請」同「團隊會先閱讀你的資料，再提供合適的下一步。」",
+        "冇報價、冇日曆、冇收入／時間／成果保證"
+      ],
+      "deps": [],
+      "weight": "blocker"
+    },
+    {
+      "id": "a8",
+      "sectionKey": "A",
+      "kind": "test",
+      "title": "必填同意攔唔攔得住",
+      "actor": "carey",
+      "chips": ["合規"],
+      "action": ["喺最後一頁唔勾 Q32（私隱）或者 Q33（成果邊界），直接撳提交"],
+      "expect": [
+        "提交唔到，錯誤即場喺嗰題出現",
+        "Q34（推廣訊息）預設係唔勾嘅，唔勾一樣提交到"
+      ],
+      "deps": [],
+      "weight": "blocker"
+    },
+    {
+      "id": "a9",
+      "sectionKey": "A",
+      "kind": "test",
+      "title": "草稿續填",
+      "actor": "carey",
+      "chips": ["體驗"],
+      "action": ["隨便一份問卷填到一半，熄咗個 tab 或者 reload", "再開返同一條 URL"],
+      "expect": [
+        "返到你離開嗰一頁，之前答案仲喺度，有「已還原」提示",
+        "成功提交之後再入返，草稿已經清走，係全新一份"
+      ],
+      "deps": [],
+      "weight": "major"
+    },
+    {
+      "id": "a10",
+      "sectionKey": "A",
+      "kind": "test",
+      "title": "題目文字、語氣、選項有冇問題",
+      "actor": "carey",
+      "chips": ["最重要"],
+      "action": ["由頭到尾三份都行一次，一路睇字", "錯字、講法唔啱 Carey 口脗、選項漏咗常見答案 —— 全部記低"],
+      "expect": ["Carey 自己判斷。呢項有問題唔算 fail，係要改嘅清單"],
+      "deps": [],
+      "weight": "content"
+    },
+
+    {
+      "id": "b1",
+      "sectionKey": "B",
+      "kind": "test",
+      "title": "登入",
+      "actor": "carey",
+      "action": ["去 `/admin/login`，用佢自己嘅電郵同密碼"],
+      "expect": ["入到 Admin 總覽"],
+      "deps": ["admin_account"],
+      "weight": "blocker"
+    },
+    {
+      "id": "b2",
+      "sectionKey": "B",
+      "kind": "test",
+      "title": "總覽見到數字",
+      "actor": "carey",
+      "action": ["睇總覽"],
+      "expect": [
+        "各表單按狀態嘅數量",
+        "預設唔包 TEST 資料，所以頭先啲測試提交喺呢度未必見到 —— 正常"
+      ],
+      "deps": ["admin_account"],
+      "weight": "major"
+    },
+    {
+      "id": "b3",
+      "sectionKey": "B",
+      "kind": "test",
+      "title": "喺提交列表搵返自己啲測試",
+      "actor": "carey",
+      "action": ["去「提交」，勾「包括 TEST」"],
+      "expect": ["頭先填嗰幾筆全部出晒", "可以按表單／狀態／來源／日期／標籤篩選"],
+      "deps": ["admin_account"],
+      "weight": "blocker"
+    },
+    {
+      "id": "b4",
+      "sectionKey": "B",
+      "kind": "test",
+      "title": "提交詳情同填嗰陣一樣",
+      "actor": "carey",
+      "action": ["開其中一筆，逐題對返你填嘅嘢"],
+      "expect": [
+        "所有答案按提交當時嘅題目版本顯示",
+        "揀過嘅選項顯示中文標籤，唔係 `team_delegation` 呢類原始值"
+      ],
+      "deps": ["admin_account"],
+      "weight": "blocker"
+    },
+    {
+      "id": "b5",
+      "sectionKey": "B",
+      "kind": "test",
+      "title": "改狀態同 Review owner",
+      "actor": "carey",
+      "action": ["喺右欄將狀態改做「已聯絡」", "設定 Review owner"],
+      "expect": ["即刻反映喺列表"],
+      "deps": ["admin_account"],
+      "weight": "blocker"
+    },
+    {
+      "id": "b6",
+      "sectionKey": "B",
+      "kind": "test",
+      "title": "匯出 CSV",
+      "actor": "carey",
+      "action": ["喺提交頁撳匯出", "再試一次勾「包括 TEST」", "用 Excel 開"],
+      "expect": [
+        "預設匯出唔會有 TEST 資料（刻意設計）",
+        "勾咗先有",
+        "揀單一表單匯出會逐題一欄，包埋長答",
+        "中文唔會亂碼（UTF-8 BOM）"
+      ],
+      "deps": ["admin_account"],
+      "weight": "blocker"
+    },
+    {
+      "id": "b7",
+      "sectionKey": "B",
+      "kind": "test",
+      "title": "收到摘要 email",
+      "actor": "carey",
+      "chips": ["需要 Resend"],
+      "action": ["查收件箱"],
+      "expect": [
+        "有稱呼、表單、時間、來源、主要標籤、Admin 連結",
+        "完全冇任何長答內容 —— 刻意嘅私隱設計，要親自確認",
+        "TEST 提交嘅 subject 有 `[TEST]` 前綴"
+      ],
+      "deps": ["resend"],
+      "weight": "major"
+    },
+    {
+      "id": "b8",
+      "sectionKey": "B",
+      "kind": "test",
+      "title": "Notion 見到同一筆，改狀態會跟住郁",
+      "actor": "carey",
+      "chips": ["需要 Notion"],
+      "action": ["喺 Notion 開返嗰個 database 睇", "喺 Admin 改狀態，再返 Notion refresh"],
+      "expect": [
+        "欄位齊，長答一律冇同步過去（page 內文係空）",
+        "改狀態後同一版 page 嘅「跟進狀態」更新，唔會多開一版"
+      ],
+      "deps": ["notion"],
+      "weight": "major"
+    },
+    {
+      "id": "b9",
+      "sectionKey": "B",
+      "kind": "test",
+      "title": "重覆提交會標示出嚟",
+      "actor": "carey",
+      "action": ["用同一個電郵，再提交多次同一份問卷"],
+      "expect": ["Admin 顯示「重覆」，兩筆共用同一個 lead", "判定窗口預設 30 日"],
+      "deps": ["admin_account"],
+      "weight": "minor"
+    },
+
+    {
+      "id": "c1",
+      "sectionKey": "C",
+      "kind": "test",
+      "title": "登入鎖定",
+      "actor": "jeff",
+      "action": ["故意打錯密碼 5 次"],
+      "expect": [
+        "頭 4 次都只係「電郵或密碼不正確」，唔會透露個帳戶存唔存在",
+        "第 5 次鎖 15 分鐘",
+        "鎖住期間就算打啱密碼一樣入唔到"
+      ],
+      "deps": [],
+      "weight": "blocker"
+    },
+    {
+      "id": "c2",
+      "sectionKey": "C",
+      "kind": "test",
+      "title": "登出真係登出",
+      "actor": "jeff",
+      "action": ["登出", "再試入 `/admin` 同 `/api/admin/export`"],
+      "expect": [
+        "Admin 頁彈返去登入；匯出直接 401",
+        "登出係連 session 資料列都刪走，唔係淨係清 cookie"
+      ],
+      "deps": [],
+      "weight": "blocker"
+    },
+    {
+      "id": "c3",
+      "sectionKey": "C",
+      "kind": "test",
+      "title": "改題目唔會搞亂舊提交",
+      "actor": "jeff",
+      "action": [
+        "表單 → 由目前版本建立草稿 → 改一句題目文字 → 儲存並驗證 → 預覽 → 發布為新版本",
+        "返去睇頭先嗰啲提交"
+      ],
+      "expect": [
+        "舊提交仍然用舊版本顯示",
+        "題目 ID 一經發布唔可以改類型或者重用"
+      ],
+      "deps": [],
+      "weight": "major"
+    },
+    {
+      "id": "c4",
+      "sectionKey": "C",
+      "kind": "test",
+      "title": "邀請連結同 Tailored Module",
+      "actor": "jeff",
+      "action": [
+        "建立一條邀請連結（附加模組、到期日、次數上限）",
+        "開嚟睇；再開公開嘅 `/f/high_ticket` 比較"
+      ],
+      "expect": [
+        "模組題目只喺邀請連結出現，公開 URL 永遠只有 Q01–Q34",
+        "撤銷之後即刻失效"
+      ],
+      "deps": [],
+      "weight": "major"
+    },
+    {
+      "id": "c5",
+      "sectionKey": "C",
+      "kind": "test",
+      "title": "Notion 出事都唔會影響到客人",
+      "actor": "jeff",
+      "chips": ["需要 Notion"],
+      "action": [
+        "故意將其中一個 `notion_db_*` 設成錯嘅 id",
+        "提交一次",
+        "改返正確 → Admin → Notion → 「重試未同步」"
+      ],
+      "expect": [
+        "提交照樣成功，客人見到正常成功頁",
+        "狀態記做 `failed`，唔會扮成功，錯誤原文留低",
+        "改返正確之後重試 → `synced`，攞到 page id"
+      ],
+      "deps": ["notion"],
+      "weight": "major"
+    },
+
+    {
+      "id": "d1",
+      "sectionKey": "D",
+      "kind": "test",
+      "title": "Cloudflare：見到 Worker 同 D1",
+      "actor": "carey",
+      "action": ["Carey 自己登入 Cloudflare"],
+      "expect": ["見到 `csc-questionnaire` Worker 同 `csc-questionnaire-production` D1"],
+      "deps": [],
+      "weight": "blocker"
+    },
+    {
+      "id": "d2",
+      "sectionKey": "D",
+      "kind": "test",
+      "title": "Admin：見到提交、改到狀態",
+      "actor": "carey",
+      "action": ["Carey 自己登入，唔准 Jeff 幫手"],
+      "expect": ["睇到、改到"],
+      "deps": ["admin_account"],
+      "weight": "blocker"
+    },
+    {
+      "id": "d3",
+      "sectionKey": "D",
+      "kind": "test",
+      "title": "自己匯出到 CSV",
+      "actor": "carey",
+      "action": ["Carey 自己撳"],
+      "expect": ["檔案落到手"],
+      "deps": ["admin_account"],
+      "weight": "blocker"
+    },
+    {
+      "id": "d4",
+      "sectionKey": "D",
+      "kind": "test",
+      "title": "Notion 見到同步過嚟嘅紀錄",
+      "actor": "carey",
+      "chips": ["需要 Notion"],
+      "action": ["Carey 自己開"],
+      "expect": ["見到"],
+      "deps": ["notion"],
+      "weight": "blocker"
+    },
+    {
+      "id": "d5",
+      "sectionKey": "D",
+      "kind": "test",
+      "title": "收得到新提交嘅摘要 email",
+      "actor": "carey",
+      "chips": ["需要 Resend"],
+      "action": ["隨便再提交一次"],
+      "expect": ["Carey 個 inbox 收到"],
+      "deps": ["resend"],
+      "weight": "blocker"
+    },
+    {
+      "id": "d6",
+      "sectionKey": "D",
+      "kind": "test",
+      "title": "喺 Cloudflare 匯出一次 D1 備份",
+      "actor": "carey",
+      "action": ["Carey 自己做一次"],
+      "expect": ["拎到份備份檔"],
+      "deps": [],
+      "weight": "blocker"
+    },
+    {
+      "id": "d7",
+      "sectionKey": "D",
+      "kind": "test",
+      "title": "由 Admin 匯出一次完整 CSV",
+      "actor": "carey",
+      "action": ["Carey 自己做"],
+      "expect": ["確認屬於 Carey 嘅題目、內容同資料可以隨時完整取回，唔使問人"],
+      "deps": ["admin_account"],
+      "weight": "blocker"
+    },
+
+    {
+      "id": "e1",
+      "sectionKey": "E",
+      "kind": "test",
+      "title": "跑一次上線前檢查",
+      "actor": "jeff",
+      "action": ["登入 Admin → 上線檢查（`/admin/preflight`）"],
+      "expect": [
+        "目標：「可以上線（production）」，0 項 BLOCKER",
+        "WARNING 由操作者判斷",
+        "此頁唔會顯示任何 secret 嘅內容，只顯示有冇設定"
+      ],
+      "deps": [],
+      "weight": "blocker"
+    },
+    {
+      "id": "e2",
+      "sectionKey": "E",
+      "kind": "test",
+      "title": "先 dry run 睇清楚會刪啲咩",
+      "actor": "jeff",
+      "action": ["`pnpm purge:test -- --env production`"],
+      "expect": [
+        "列出會刪嘅 `is_test` 提交、標籤、log 同因此變孤兒嘅 lead",
+        "會話你知有幾多版 Notion page 唔會掂"
+      ],
+      "deps": [],
+      "weight": "blocker"
+    },
+    {
+      "id": "e3",
+      "sectionKey": "E",
+      "kind": "test",
+      "title": "真刪",
+      "actor": "jeff",
+      "action": ["`pnpm purge:test -- --env production --confirm`"],
+      "expect": ["D1 清乾淨"],
+      "deps": [],
+      "weight": "blocker"
+    },
+    {
+      "id": "e4",
+      "sectionKey": "E",
+      "kind": "test",
+      "title": "Notion 嗰邊人手刪",
+      "actor": "both",
+      "chips": ["需要 Notion"],
+      "action": ["去三個 database，刪／封存 TEST 嗰啲 page"],
+      "expect": ["腳本唔會刪 Notion —— 呢步一定要人手做"],
+      "deps": ["notion"],
+      "weight": "blocker"
+    },
+    {
+      "id": "e5",
+      "sectionKey": "E",
+      "kind": "test",
+      "title": "再跑一次上線前檢查",
+      "actor": "jeff",
+      "action": ["再開 `/admin/preflight`"],
+      "expect": ["「TEST 資料已清除」轉做通過"],
+      "deps": [],
+      "weight": "blocker"
+    }
+  ],
+  "signOffs": [
+    {
+      "scope": "A",
+      "title": "內容驗收",
+      "signer": "carey",
+      "countersign": "jeff",
+      "when": "Carey 填完三份問卷即刻簽",
+      "statement": "我已逐條閱讀三份問卷嘅題目、選項、同意條款同成功頁文案，確認內容準確、語氣符合 Acaredemy 品牌，並同意以此版本對外使用。我明白題目 ID 一經發布唔可以改類型或重用，日後修改會產生新版本，而舊提交會繼續以舊版本顯示。"
+    },
+    {
+      "scope": "B+C",
+      "title": "營運操作",
+      "signer": "carey",
+      "countersign": "jeff",
+      "when": "Carey 自己撳完 Admin 之後",
+      "statement": "我已親自操作 Admin：查閱提交、修改跟進狀態、匯出 CSV。我亦見過系統喺登入鎖定、題目改版、以及 Notion 同步失敗時嘅行為，並明白遇到問題時應該點處理。我理解呢節部分項目由 Jeff 示範，我確認嘅係「我已見過並明白」，唔係對技術正確性作出保證。"
+    },
+    {
+      "scope": "D",
+      "title": "交接",
+      "signer": "carey",
+      "countersign": "jeff",
+      "when": "降走 Jeff 權限、Carey 獨立做完之後",
+      "allowExceptions": false,
+      "statement": "我確認以下營運資產由我方帳戶持有並可獨立操作：Cloudflare（Worker 及 D1）、Admin owner 帳戶、Resend 寄件網域、Notion workspace。我已喺冇 Jeff 協助嘅情況下，親自完成登入、查閱提交、修改狀態、匯出 CSV、匯出 D1 備份。我確認屬於我方嘅題目、內容及資料可以隨時完整取回。"
+    },
+    {
+      "scope": "final",
+      "title": "最終驗收",
+      "signer": "carey",
+      "countersign": "jeff",
+      "when": "清場完",
+      "statement": "以上各節已完成，測試資料已清除，上線前檢查冇 BLOCKER。本系統符合驗收要求，同意上線。未解決事項已記錄於下表，並附處理安排及限期。"
+    }
+  ],
+  "countersignStatement": "本人已按上述範圍交付，並已移除或降低本人喺相關營運資產嘅權限。"
+}
