@@ -42,7 +42,19 @@ Carey／Jojo 需要準備好這五樣，缺一樣就上不了：
    | Build command | `pnpm build:cf` |
    | Deploy command | `npx wrangler deploy --env production` |
 
-4. 網域：**Workers → 該 Worker → Settings → Domains & Routes → Add custom domain**，填正式網域。
+4. **Settings → Build → Branch control**：`Production branch` 設為 `main`，並**關閉 Builds for
+   non-production branches**。
+
+   > 這一項不是可有可無。Workers Builds 對 non-production branch 的預設部署指令是
+   > `npx wrangler versions upload`，**不帶 `--env`**，因此讀的是 `wrangler.jsonc` 的 top-level
+   > 設定 —— 而 top-level 是 staging 的設定，指向 staging 帳戶的 D1。該資料庫在 Carey 帳戶並不存在，
+   > 所以每個 PR 都會掛一個紅色 ❌。PR preview 由 staging 帳戶的 Worker 提供，production 帳戶
+   > 不需要、也不應該 build PR 分支。
+   >
+   > **不要**把它改成 `npx wrangler versions upload --env production` 來「修好」這個紅色 ❌：
+   > 那樣任何 PR 分支都可以上傳一個版本到 production Worker。
+
+5. 網域：**Workers → 該 Worker → Settings → Domains & Routes → Add custom domain**，填正式網域。
    DNS 與 SSL 由 Cloudflare 自動處理，通常幾分鐘內生效（最壞 24 小時）。
 
 ## 二、Resend（Carey 帳戶）
