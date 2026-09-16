@@ -112,8 +112,16 @@ Workers & Pages app 存取此 repository，否則 Carey 的 Cloudflare 匯入不
    pnpm seed:prod          # 三份問卷與預設設定，idempotent
    ```
 
-4. 建立 owner 帳戶：依 `docs/deploy.md`〈建立 Admin 帳戶（不需 CLI）〉。
-   **密碼由 Carey 自己選**，Jeff 不應知道。系統沒有改密碼介面，換密碼就重跑同一段 SQL。
+4. 建立 owner 帳戶 —— 發一條設定連結，讓 Carey 自己設密碼：
+
+   ```bash
+   APP_ORIGIN=<正式網址> ADMIN_EMAIL=<Carey 的電郵> ADMIN_NAME="Carey" ADMIN_ROLE=owner \
+     pnpm admin:invite -- --env production --remote
+   ```
+
+   把印出來的連結交給 Carey（7 日內有效、只可用一次）。**密碼由 Carey 自己設定，Jeff 不會知道**
+   —— 第八節「在沒有 Jeff 協助下獨立操作」靠的就是這一點。日後換密碼或忘記密碼，重跑同一條
+   指令即可，不需要改資料庫。詳見 `docs/deploy.md`〈建立 Admin 帳戶〉。
 
 5. 登入 Admin → **設定**，填入開始之前那五樣裡的 1–4，以及三個 Notion database ID
    與 `admin_base_url`（正式網址）。
