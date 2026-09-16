@@ -43,7 +43,7 @@ D1 `csc-questionnaire-staging` 已建立、已套用 migration 並已 seed 三�
 3. **Settings → Build → Branch control**：`Production branch` 設為 `main`。**Builds for non-production branches** 勾唔勾都可以 —— top-level 設定本身就是可部署的 staging，所以預設的 `npx wrangler versions upload` 亦行得通，會為每個 PR 產生 preview 版本而不影響 live deployment。
 
 4. **Settings → Variables and Secrets → Add**，Type 選 **Secret**：`RESEND_API_KEY`、`RESEND_FROM`、`NOTION_TOKEN`。未設定時 Email／Notion 會記錄為 `skipped`，不影響提交。（這些是 runtime secrets，與 Settings → Build 的 build variables 是兩回事。）
-5. 建立 Admin 帳戶：在瀏覽器 Console 產生密碼雜湊（密碼不會離開你的電腦），再於 **D1 → csc-questionnaire-staging → Console** 貼上 INSERT。見下方〈建立 Admin 帳戶〉。
+5. 建立 Admin 帳戶：用 `pnpm admin:invite` 發一條設定連結，讓該名人員自己設定密碼。見下方〈建立 Admin 帳戶〉。
 
 `APP_ORIGIN` 不必事先填：應用程式會以實際請求的 host 判斷 origin 與 cookie `Secure`，設定值只作為沒有請求上下文時的後備。staging 的 `APP_ORIGIN` 已填成 `https://csc-questionnaire-staging.jeff-poon.workers.dev`；production 換上正式網域後同樣要更新 `env.production.vars.APP_ORIGIN`。
 
@@ -61,9 +61,25 @@ pnpm exec wrangler secret put NOTION_TOKEN --env staging
 pnpm deploy:staging
 ```
 
-## 建立 Admin 帳戶（不需 CLI）
+## 建立 Admin 帳戶
 
-在 **staging 網站本身**（或任何 https 頁面）按 F12 開 Console 執行 —— `crypto.subtle` 在非安全來源不可用。把密碼換成你自己的（至少 12 字元）：
+### 建議做法：發一條設定連結
+
+```bash
+APP_ORIGIN=https://csc-questionnaire.example.workers.dev \
+  ADMIN_EMAIL=owner@example.com ADMIN_NAME="Carey" ADMIN_ROLE=owner \
+  pnpm admin:invite -- --env production --remote
+```
+
+指令會印出一條 `<APP_ORIGIN>/admin/setup/<token>` 連結：**7 日內有效、只可用一次**。把它交給該名人員，他開啟後自行設定密碼。
+
+這是把 owner 帳戶交給客戶時唯一正確的做法：**密碼由本人設定，交付方從頭到尾不會知道**，交接時「對方可獨立操作」才成立。同一條指令也用於重設密碼 —— 帳戶已存在時，舊密碼一直有效，直到有人用該連結設定新密碼為止。
+
+資料庫只存 token 的 SHA-256，所以一份資料庫副本不足以冒用連結；連結一經使用即失效，之後再開會顯示「無效或者已經使用過」，不會透露該帳戶是否存在。
+
+### 後備做法：沒有 wrangler 時手動建立
+
+跑不了 CLI 時，可在 **網站本身**（或任何 https 頁面）按 F12 開 Console 產生雜湊 —— `crypto.subtle` 在非安全來源不可用。把密碼換成你自己的（至少 12 字元）：
 
 ```js
 await (async (pw) => {
@@ -85,7 +101,7 @@ VALUES ('admin_owner', 'owner@example.com', '貼上 pbkdf2$...', 'Owner', 'owner
 ON CONFLICT(email) DO UPDATE SET password_hash = excluded.password_hash, failed_attempts = 0, locked_until = NULL;
 ```
 
-系統目前沒有「更改密碼」介面；要換密碼就重新執行同一段 SQL（`ON CONFLICT` 會覆蓋雜湊）。
+用這個後備做法時，密碼會經由你手上的雜湊交付，換密碼也要重跑同一段 SQL。可以跑 CLI 的話請用上面的設定連結。
 
 ## Production（Carey 帳戶）
 

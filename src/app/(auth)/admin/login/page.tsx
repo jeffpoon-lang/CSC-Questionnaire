@@ -4,13 +4,16 @@ import { LoginForm } from "./LoginForm";
 
 export const dynamic = "force-dynamic";
 
-export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string }> }) {
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string; setup?: string }> }) {
   const user = await currentAdmin();
   if (user) redirect("/admin");
-  const { next } = await searchParams;
+  const { next, setup } = await searchParams;
   return (
     <main className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center px-5 py-16">
       <h1 className="text-xl font-semibold text-stone-900">CSC Admin 登入</h1>
+      {setup === "done" && (
+        <p className="mt-3 text-sm text-emerald-700" role="status">密碼已設定。請用新密碼登入。</p>
+      )}
       <LoginForm next={next ?? "/admin"} />
     </main>
   );

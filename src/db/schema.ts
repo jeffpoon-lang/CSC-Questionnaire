@@ -204,6 +204,10 @@ export const adminUsers = sqliteTable("admin_users", {
   lockedUntil: ts("locked_until"),
   createdAt: ts("created_at").notNull(),
   lastLoginAt: ts("last_login_at"),
+  // Only the SHA-256 of the setup link's token is stored, like sessions: the
+  // link is e-mailed around, so a database copy must not be enough to claim it.
+  setupTokenHash: text("setup_token_hash"),
+  setupTokenExpiresAt: ts("setup_token_expires_at"),
 });
 
 export const sessions = sqliteTable(

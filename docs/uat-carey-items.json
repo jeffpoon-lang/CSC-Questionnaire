@@ -144,8 +144,8 @@
       "title": "Carey 自己嘅 Admin owner 帳戶",
       "actor": "both",
       "action": [
-        "Jeff 開一個 role 係 `owner` 嘅帳戶",
-        "密碼由 Carey 自己撳，Jeff 唔應該知",
+        "Jeff 用 `pnpm admin:invite` 發一條設定連結（`ADMIN_ROLE=owner`）",
+        "Carey 自己開條連結設密碼 —— 7 日內有效、只可用一次，Jeff 由頭到尾唔會知道個密碼",
         "交接時停用或刪走 `admin_jeff`"
       ],
       "expect": [
