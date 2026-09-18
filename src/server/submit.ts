@@ -6,6 +6,7 @@ import { inviteLinks, leads, notionSyncLog, submissionTags, submissions } from "
 import { getFormWithCurrentVersion, getInviteByToken, inviteIsUsable, resolveModules } from "@/db/queries/forms";
 import { mergeQuestions } from "@/engine/merge";
 import { extractTags } from "@/engine/tags";
+import { isTestSubmission } from "@/engine/test-mode";
 import type { Answers, ConsentAnswer, Question } from "@/engine/types";
 import { validateAnswers } from "@/engine/zod-from-definition";
 import { newId, randomToken, sha256Hex } from "@/server/ids";
@@ -102,7 +103,7 @@ export async function processSubmission(db: Db, slug: string, body: SubmitBody, 
   const email = firstString(answers, findByType(questions, "email"));
   const phone = firstString(answers, findByType(questions, "phone"));
   const displayName = firstString(answers, ["G01", "C01", "Q01"]) ?? firstString(answers, findByType(questions, "short_text"));
-  const isTest = ctx.appEnv !== "production" || body.meta.test === true;
+  const isTest = isTestSubmission(ctx.appEnv, body.meta.test === true);
 
   let leadId: string | null = null;
   if (email || phone) {

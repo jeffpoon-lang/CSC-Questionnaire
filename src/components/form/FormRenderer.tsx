@@ -28,7 +28,11 @@ export interface FormRendererProps {
   /** Answers pre-filled from the URL / invite (applied only when no draft). */
   prefill?: Answers;
   turnstileSiteKey?: string | null;
-  isTestEnv: boolean;
+  /**
+   * This submission will be stored as test data — resolved on the server from
+   * APP_ENV and ?test=1, so the badge and the payload cannot disagree.
+   */
+  testMode: boolean;
   /** Admin preview: renders + validates but never submits or saves drafts. */
   previewOnly?: boolean;
 }
@@ -284,7 +288,7 @@ export function FormRenderer(props: FormRendererProps) {
             inviteToken: props.inviteToken,
             startedAt: startedAt.current,
             tracking: trackingRef.current,
-            test: props.isTestEnv || new URLSearchParams(window.location.search).get("test") === "1",
+            test: props.testMode,
           },
           hp,
           turnstileToken,
@@ -343,6 +347,7 @@ export function FormRenderer(props: FormRendererProps) {
         percent={percent}
         sections={sections}
         activeSection={activeSection}
+        testMode={props.testMode && !props.previewOnly}
       />
 
       <div className="mx-auto w-full max-w-2xl px-5 pb-32 pt-8 sm:px-8">
@@ -370,10 +375,8 @@ export function FormRenderer(props: FormRendererProps) {
                   <span>共 {pages.length} 頁，每頁 1–3 題</span>
                   <span>中途離開，答案會保留</span>
                 </div>
-                {props.previewOnly ? (
+                {props.previewOnly && (
                   <p className="mt-3 inline-block rounded bg-violet-100 px-2 py-1 text-xs font-semibold text-violet-800">預覽模式：不會提交或保存草稿</p>
-                ) : props.isTestEnv && (
-                  <p className="mt-3 inline-block rounded bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-800">TEST 環境：提交會標記為測試資料</p>
                 )}
               </header>
 
