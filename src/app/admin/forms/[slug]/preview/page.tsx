@@ -32,7 +32,7 @@ export default async function FormPreview({ params, searchParams }: { params: Pr
         questions={def.questions}
         piiHintText={def.settings.piiHintText}
         honeypot={false}
-        isTestEnv
+        testMode
         previewOnly
       />
     </main>

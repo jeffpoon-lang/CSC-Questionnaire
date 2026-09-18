@@ -4,6 +4,7 @@ import { FormRenderer } from "@/components/form/FormRenderer";
 import { getDb, getEnv } from "@/db/client";
 import { getFormWithCurrentVersion, getInviteByToken, inviteIsUsable, resolveModules } from "@/db/queries/forms";
 import { mergeQuestions } from "@/engine/merge";
+import { isTestSubmission, testParam } from "@/engine/test-mode";
 import type { Answers } from "@/engine/types";
 import { isFormSlug } from "@/forms/canonical";
 import { loadSettings, settingBool, settingString } from "@/server/settings";
@@ -76,7 +77,7 @@ export default async function FormPage({ params, searchParams }: { params: Param
         inviteToken={inviteToken}
         prefill={prefill}
         turnstileSiteKey={turnstileSiteKey}
-        isTestEnv={env.APP_ENV !== "production"}
+        testMode={isTestSubmission(env.APP_ENV, testParam(sp.test))}
       />
     </main>
   );

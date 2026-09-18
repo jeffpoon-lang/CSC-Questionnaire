@@ -9,9 +9,16 @@ export function StepProgress(props: {
   sections: string[];
   /** -1 before the first section, sections.length once past the last. */
   activeSection: number;
+  /** Warns that this submission will be stored as test data. */
+  testMode?: boolean;
 }) {
   return (
     <div className="sticky top-0 z-20 border-b border-stone-200 bg-stone-50/90 backdrop-blur">
+      {props.testMode && (
+        <p role="status" className="bg-amber-200 px-5 py-1.5 text-center text-xs font-semibold text-amber-900 sm:px-8">
+          測試模式：此提交會標記為測試資料，不會當作真實查詢
+        </p>
+      )}
       <div className="mx-auto w-full max-w-2xl px-5 pb-2.5 pt-3 sm:px-8">
         <div className="flex items-baseline justify-between gap-4">
           <span className="text-sm font-semibold text-stone-900">{props.label}</span>

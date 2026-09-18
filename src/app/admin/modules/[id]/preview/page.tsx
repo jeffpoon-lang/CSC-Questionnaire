@@ -32,7 +32,7 @@ export default async function ModulePreview({ params, searchParams }: { params: 
         questions={mergeQuestions(def, [parsed.value])}
         piiHintText={def.settings.piiHintText}
         honeypot={false}
-        isTestEnv
+        testMode
         previewOnly
       />
     </main>
